@@ -98,8 +98,8 @@ perf: reduce SCFrameAnalyzer allocation in hot path
 ```
 Week:           1
 Phase:          Scaffolding
-Last completed: Package.swift, full Sources/ + Tests/ placeholder scaffold, .swiftlint.yml — swift build clean (8.78s)
-Next task:      Week 1 / Task 02 — implement protocols and data models
-Branch:         main
+Last completed: Task 02 — SCCloudResult (score:Int, SCIssue, SCRecommendation, rawJSON), SCFrame (pixelBuffer), SCFrameRule (ruleID, evaluate, feedbackMessage, severity with defaults), SCIssue, SCRecommendation, SCImpactLevel — swift build clean (1.14s)
+Next task:      Week 1 / Task 03
+Branch:         feat/week1-scaffold
 Last tag:       (none)
 ```
