@@ -92,3 +92,14 @@ perf: reduce SCFrameAnalyzer allocation in hot path
 - Do NOT let Claude modify `.pbxproj` files — add new files to Xcode manually
 - Do NOT delete DerivedData to fix build errors — it breaks Xcode package resolution
 - Do NOT add a required protocol method without a default implementation
+
+## Current Phase
+
+```
+Week:           1
+Phase:          Scaffolding
+Last completed: Package.swift, full Sources/ + Tests/ placeholder scaffold, .swiftlint.yml — swift build clean (8.78s)
+Next task:      Week 1 / Task 02 — implement protocols and data models
+Branch:         main
+Last tag:       (none)
+```
