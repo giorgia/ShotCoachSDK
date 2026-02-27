@@ -92,3 +92,14 @@ perf: reduce SCFrameAnalyzer allocation in hot path
 - Do NOT let Claude modify `.pbxproj` files — add new files to Xcode manually
 - Do NOT delete DerivedData to fix build errors — it breaks Xcode package resolution
 - Do NOT add a required protocol method without a default implementation
+
+## Current Phase
+
+```
+Week:           1
+Phase:          Scaffolding
+Last completed: Task 02 — SCCloudResult (score:Int, SCIssue, SCRecommendation, rawJSON), SCFrame (pixelBuffer), SCFrameRule (ruleID, evaluate, feedbackMessage, severity with defaults), SCIssue, SCRecommendation, SCImpactLevel — swift build clean (1.14s)
+Next task:      Week 1 / Task 03
+Branch:         feat/week1-scaffold
+Last tag:       (none)
+```
