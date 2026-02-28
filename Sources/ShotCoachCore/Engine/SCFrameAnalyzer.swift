@@ -51,8 +51,10 @@ public actor SCFrameAnalyzer {
                 }
             }
             for await (id, result) in group {
-                assert(ruleResults[id] == nil,
-                       "Duplicate ruleID '\(id)' — only the last result will be kept")
+                // precondition (not assert) so duplicate ruleIDs crash in both
+                // debug and release builds — silent overwrites corrupt analytics data.
+                precondition(ruleResults[id] == nil,
+                             "Duplicate ruleID '\(id)' — each SCFrameRule must have a unique ruleID")
                 ruleResults[id] = result
             }
         }

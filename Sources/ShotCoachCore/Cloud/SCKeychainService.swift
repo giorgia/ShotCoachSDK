@@ -2,10 +2,14 @@ import Foundation
 import Security
 
 /// Static helper to store, retrieve, and delete string values from the system Keychain.
-/// Values are never logged — only the key name appears in diagnostic messages.
-public struct SCKeychainService: Sendable {
+/// Values are never logged — only the key name appears in diagnostic messages (DEBUG only).
+///
+/// All items are scoped to the service identifier `SCKeychainService.service` so they
+/// don't collide with items from other SDKs or app extensions sharing the same keychain.
+public enum SCKeychainService: Sendable {
 
-    private init() {}
+    // Reverse-DNS service name used as kSecAttrService to namespace all items.
+    private static let service = "com.shotcoach.sdk"
 
     // MARK: - Public API
 
@@ -15,21 +19,24 @@ public struct SCKeychainService: Sendable {
     @discardableResult
     public static func save(key: String, value: String) -> Bool {
         guard let data = value.data(using: .utf8) else { return false }
-        // Delete first so SecItemAdd always succeeds (update is more complex).
+        // Delete first so SecItemAdd always succeeds (SecItemUpdate is more complex).
         delete(key: key)
 
         let query: [CFString: Any] = [
             kSecClass:          kSecClassGenericPassword,
+            kSecAttrService:    service,
             kSecAttrAccount:    key,
             kSecValueData:      data,
             kSecAttrAccessible: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
         ]
 
         let status = SecItemAdd(query as CFDictionary, nil)
+#if DEBUG
         if status != errSecSuccess {
-            // Log key name only — never the value.
+            // Log key name only in DEBUG — never the value, never in release builds.
             print("[SCKeychainService] save failed for key '\(key)', OSStatus=\(status)")
         }
+#endif
         return status == errSecSuccess
     }
 
@@ -37,6 +44,7 @@ public struct SCKeychainService: Sendable {
     public static func load(key: String) -> String? {
         let query: [CFString: Any] = [
             kSecClass:       kSecClassGenericPassword,
+            kSecAttrService: service,
             kSecAttrAccount: key,
             kSecReturnData:  kCFBooleanTrue as Any,
             kSecMatchLimit:  kSecMatchLimitOne
@@ -49,9 +57,11 @@ public struct SCKeychainService: Sendable {
               let data = item as? Data,
               let string = String(data: data, encoding: .utf8)
         else {
+#if DEBUG
             if status != errSecItemNotFound {
                 print("[SCKeychainService] load failed for key '\(key)', OSStatus=\(status)")
             }
+#endif
             return nil
         }
         return string
@@ -63,11 +73,14 @@ public struct SCKeychainService: Sendable {
     public static func delete(key: String) -> Bool {
         let query: [CFString: Any] = [
             kSecClass:       kSecClassGenericPassword,
+            kSecAttrService: service,
             kSecAttrAccount: key
         ]
         let status = SecItemDelete(query as CFDictionary)
         guard status == errSecSuccess || status == errSecItemNotFound else {
+#if DEBUG
             print("[SCKeychainService] delete failed for key '\(key)', OSStatus=\(status)")
+#endif
             return false
         }
         return true

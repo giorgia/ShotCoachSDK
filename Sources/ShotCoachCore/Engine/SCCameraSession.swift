@@ -12,12 +12,18 @@ import CoreVideo
 /// session.start()
 /// let photo = try await session.capturePhoto()
 /// ```
+///
+/// Threading note: `delegate` and `photoHandler` are accessed from both the caller's
+/// concurrency context and `captureQueue`. Under Swift 5.9 minimal concurrency checking
+/// this does not generate errors, but callers should treat `SCCameraSession` as
+/// single-owner (i.e., not shared across actors) to avoid races. A full actor-based
+/// refactor is tracked for a future release.
 public final class SCCameraSession: NSObject {
 
     // MARK: - Public
 
     /// Receives frame-analysis updates and post-capture cloud results.
-    /// `weak` semantics are enforced via the AnyObject box pattern.
+    /// Held weakly via the AnyObject box pattern (direct `weak var: any Protocol` is unsound).
     public var delegate: (any SCAnalysisDelegate)? {
         get { _delegateObject as? any SCAnalysisDelegate }
         set { _delegateObject = newValue }
@@ -29,6 +35,9 @@ public final class SCCameraSession: NSObject {
         self.category      = category
         super.init()
         configureSession()
+        // NOTE: we intentionally do NOT set a delegate on `analyzer` here.
+        // `SCFrameAnalyzer.notifyDelegate` is a no-op when no analyzer delegate is set;
+        // `SCCameraSession` owns all delegate dispatch so there is no double notification.
     }
 
     /// Starts the capture session on a background queue.
@@ -45,16 +54,22 @@ public final class SCCameraSession: NSObject {
     /// and the most-recent on-device frame result.
     /// Cloud analysis is dispatched concurrently; results arrive via
     /// `SCAnalysisDelegate.analyzer(_:didComplete:cloudResult:)`.
+    /// - Note: Concurrent calls are not supported. A second call while a capture
+    ///   is in-flight will abandon the previous continuation.
     public func capturePhoto() async throws -> SCPhoto {
         let frameResult = await analyzer.lastFrameResult()
         let imageData   = try await captureRawPhotoData()
         let photo       = SCPhoto(imageData: imageData, frameResult: frameResult)
 
-        // Start cloud analysis in background; deliver result to delegate when done.
-        let snapProvider  = cloudProvider
-        let snapPrompt    = category.requiredShots.first.map { category.cloudPrompt(for: $0) } ?? ""
-        let snapAnalyzer  = analyzer
-        let snapDelegate  = delegate
+        // Fallback prompt when no required shots are defined for the category.
+        let snapPrompt   = category.requiredShots.first
+            .map { category.cloudPrompt(for: $0) }
+            .flatMap { $0.isEmpty ? nil : $0 }
+            ?? "Analyse this photo for overall quality, composition, and lighting."
+
+        let snapProvider = cloudProvider
+        let snapAnalyzer = analyzer
+        let snapDelegate = delegate
 
         Task {
             let cloudResult = try? await snapProvider.analyze(photo: photo, prompt: snapPrompt)
@@ -115,13 +130,14 @@ public final class SCCameraSession: NSObject {
     // MARK: - Private — photo capture bridge
 
     private func captureRawPhotoData() async throws -> Data {
-        try await withCheckedThrowingContinuation { [weak self] continuation in
+        defer { photoHandler = nil }   // Release handler after continuation resolves.
+        return try await withCheckedThrowingContinuation { [weak self] continuation in
             guard let self else {
                 continuation.resume(throwing: SCCloudError.invalidResponse)
                 return
             }
             let handler = PhotoCaptureHandler(continuation: continuation)
-            self.photoHandler = handler   // Retain for duration of callback.
+            self.photoHandler = handler   // Retain for duration of AVFoundation callback.
             self.photoOutput.capturePhoto(
                 with: AVCapturePhotoSettings(),
                 delegate: handler
@@ -143,6 +159,7 @@ extension SCCameraSession: AVCaptureVideoDataOutputSampleBufferDelegate {
         let ts    = CMSampleBufferGetPresentationTimeStamp(sampleBuffer).seconds
         let frame = SCFrame(timestamp: ts, pixelBuffer: pixelBuffer)
 
+        // Capture locals before crossing into the Task — avoids capturing `self`.
         let snapAnalyzer = analyzer
         let snapDelegate = delegate
 
@@ -173,6 +190,8 @@ private final class PhotoCaptureHandler: NSObject, AVCapturePhotoCaptureDelegate
         defer { continuation = nil }
 
         if let error {
+            // Map camera-hardware errors to networkFailure; a dedicated SCCaptureError
+            // type is planned for a future release.
             continuation?.resume(throwing: SCCloudError.networkFailure(error.localizedDescription))
             return
         }
