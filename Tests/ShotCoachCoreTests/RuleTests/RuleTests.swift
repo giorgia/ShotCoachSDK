@@ -10,8 +10,9 @@ final class RuleTests: XCTestCase {
     private func makeSolid(r: UInt8, g: UInt8, b: UInt8,
                            width: Int = 64, height: Int = 64) -> CVPixelBuffer {
         var pb: CVPixelBuffer?
-        CVPixelBufferCreate(kCFAllocatorDefault, width, height,
-                            kCVPixelFormatType_32BGRA, nil, &pb)
+        let status = CVPixelBufferCreate(kCFAllocatorDefault, width, height,
+                                         kCVPixelFormatType_32BGRA, nil, &pb)
+        precondition(status == kCVReturnSuccess && pb != nil, "CVPixelBufferCreate failed: \(status)")
         let buf = pb!
         CVPixelBufferLockBaseAddress(buf, [])
         defer { CVPixelBufferUnlockBaseAddress(buf, []) }
@@ -32,8 +33,9 @@ final class RuleTests: XCTestCase {
     /// Creates a 1px-checkerboard 64×64 BGRA pixel buffer (maximum sharpness).
     private func makeCheckerboard(width: Int = 64, height: Int = 64) -> CVPixelBuffer {
         var pb: CVPixelBuffer?
-        CVPixelBufferCreate(kCFAllocatorDefault, width, height,
-                            kCVPixelFormatType_32BGRA, nil, &pb)
+        let status = CVPixelBufferCreate(kCFAllocatorDefault, width, height,
+                                         kCVPixelFormatType_32BGRA, nil, &pb)
+        precondition(status == kCVReturnSuccess && pb != nil, "CVPixelBufferCreate failed: \(status)")
         let buf = pb!
         CVPixelBufferLockBaseAddress(buf, [])
         defer { CVPixelBufferUnlockBaseAddress(buf, []) }
@@ -77,6 +79,7 @@ final class RuleTests: XCTestCase {
     func testBrightness_performance() async {
         let rule  = SCBrightnessRule()
         let f     = frame(makeSolid(r: 128, g: 128, b: 128))
+        _ = await rule.evaluate(f)  // warm up
         let start = ContinuousClock.now
         for _ in 0..<20 { _ = await rule.evaluate(f) }
         let avg = (ContinuousClock.now - start) / 20
@@ -103,6 +106,7 @@ final class RuleTests: XCTestCase {
     func testBlur_performance() async {
         let rule  = SCBlurRule()
         let f     = frame(makeCheckerboard())
+        _ = await rule.evaluate(f)  // warm up
         let start = ContinuousClock.now
         for _ in 0..<20 { _ = await rule.evaluate(f) }
         let avg = (ContinuousClock.now - start) / 20
@@ -110,6 +114,10 @@ final class RuleTests: XCTestCase {
     }
 
     // MARK: - SCHorizonRule
+    // NOTE: The fail path (tilted horizon → passed:false) requires a real image with
+    // visible structure that VNDetectHorizonRequest can analyse. It cannot be triggered
+    // with a synthetic solid-colour buffer. Functional fail-path coverage is deferred
+    // to integration tests that use bundled test images.
 
     func testHorizon_uniformFramePasses() async {
         // Solid frame has no detectable horizon — rule should fail open.
@@ -132,6 +140,9 @@ final class RuleTests: XCTestCase {
     }
 
     // MARK: - SCClutterRule
+    // NOTE: The fail path (too many salient objects → passed:false) requires real image
+    // content with multiple distinct objects for VNGenerateObjectnessBasedSaliencyImageRequest.
+    // Deferred to integration tests with bundled test images.
 
     func testClutter_uniformFramePasses() async {
         // Solid frame has no salient objects — should not be flagged as cluttered.
@@ -154,6 +165,9 @@ final class RuleTests: XCTestCase {
     }
 
     // MARK: - SCDistanceRule
+    // NOTE: The fail paths (subject too small / too large → passed:false) require real
+    // image content with a detectable subject for VNGenerateAttentionBasedSaliencyImageRequest.
+    // Deferred to integration tests with bundled test images.
 
     func testDistance_uniformFramePasses() async {
         // No subject detectable → fail open.
@@ -176,6 +190,8 @@ final class RuleTests: XCTestCase {
     }
 
     // MARK: - SCReflectionRule
+    // NOTE: The fail path (face detected → passed:false) requires a real image with a
+    // detectable face for VNDetectFaceRectanglesRequest. Deferred to integration tests.
 
     func testReflection_noFacePasses() async {
         let result = await SCReflectionRule().evaluate(frame(makeSolid(r: 128, g: 128, b: 128)))

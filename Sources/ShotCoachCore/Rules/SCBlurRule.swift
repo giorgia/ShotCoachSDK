@@ -17,6 +17,10 @@ public struct SCBlurRule: SCFrameRule {
 
     public func evaluate(_ frame: SCFrame) async -> SCRuleResult {
         let score = sharpnessScore(of: frame.pixelBuffer)
+        if score < 0 {
+            // Fail open: buffer too small to compute Laplacian.
+            return SCRuleResult(passed: true, message: "Frame too small to analyze sharpness", severity: severity)
+        }
         if score < minSharpnessScore {
             return SCRuleResult(passed: false,
                                 message: "Image is blurry — hold still or rest the camera on a surface",
@@ -33,10 +37,12 @@ public struct SCBlurRule: SCFrameRule {
         CVPixelBufferLockBaseAddress(pixelBuffer, .readOnly)
         defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, .readOnly) }
 
-        guard let base = CVPixelBufferGetBaseAddress(pixelBuffer) else { return 100 }
+        // Fail open: signal "not analyzable" with -1; evaluate(_:) handles this.
+        guard let base = CVPixelBufferGetBaseAddress(pixelBuffer) else { return -1 }
         let w   = CVPixelBufferGetWidth(pixelBuffer)
         let h   = CVPixelBufferGetHeight(pixelBuffer)
-        guard w > 2, h > 2 else { return 100 }
+        // Buffer must have interior pixels for the 4-connected Laplacian.
+        guard w > 2, h > 2 else { return -1 }
 
         let bpr = CVPixelBufferGetBytesPerRow(pixelBuffer)
         let ptr = base.assumingMemoryBound(to: UInt8.self)
@@ -49,14 +55,15 @@ public struct SCBlurRule: SCFrameRule {
             return 0.2126 * r + 0.7152 * g + 0.0722 * b
         }
 
-        // Sample interior pixels; step keeps total samples ≤ 64×64.
-        let step = max(1, max(w, h) / 64)
+        // Per-axis step keeps samples ≤ 64 per axis regardless of aspect ratio.
+        let stepX = max(1, w / 64)
+        let stepY = max(1, h / 64)
         var sum:   Float = 0
         var sumSq: Float = 0
         var n = 0
 
-        for y in stride(from: 1, to: h - 1, by: step) {
-            for x in stride(from: 1, to: w - 1, by: step) {
+        for y in stride(from: 1, to: h - 1, by: stepY) {
+            for x in stride(from: 1, to: w - 1, by: stepX) {
                 // 4-connected Laplacian: 4·C − T − B − L − R
                 let lap = 4 * luma(x: x,   y: y)
                            - luma(x: x,   y: y - 1)
@@ -68,10 +75,12 @@ public struct SCBlurRule: SCFrameRule {
                 n += 1
             }
         }
-        guard n > 0 else { return 100 }
+        guard n > 0 else { return -1 }
         let mean     = sum / Float(n)
         let variance = sumSq / Float(n) - mean * mean
-        // sqrt(variance) * 600: checkerboard (var≈16) → 100; uniform (var=0) → 0.
-        return min(variance.squareRoot() * 600, 100)
+        // Scale factor calibrated so a 1px black/white checkerboard (variance ≈ 16,
+        // Laplacian values alternating ±4) maps to score 100; uniform images map to 0.
+        let laplacianScaleFactor: Float = 600
+        return min(variance.squareRoot() * laplacianScaleFactor, 100)
     }
 }

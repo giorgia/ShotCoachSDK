@@ -1,8 +1,11 @@
 import Foundation
 import Vision
 
-/// Detects unwanted reflections by looking for faces in the frame (e.g. photographer
-/// visible in a mirror or window). Fails when more faces are detected than allowed.
+/// Detects unwanted reflections (e.g. photographer visible in a mirror or window) by
+/// using face detection as a proxy. Any face found in a listing or product photo is
+/// likely a reflected photographer rather than intentional subject matter.
+/// Note: this rule will also trigger on framed portraits or artwork — configure
+/// `allowedFaceCount` appropriately for contexts where faces are expected.
 public struct SCReflectionRule: SCFrameRule {
     /// Number of faces permitted in the frame. Default 0 (no faces allowed).
     public let allowedFaceCount: Int

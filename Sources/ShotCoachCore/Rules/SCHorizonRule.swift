@@ -32,7 +32,7 @@ public struct SCHorizonRule: SCFrameRule {
             return SCRuleResult(passed: true, message: "Horizon undetectable", severity: severity)
         }
 
-        let tilt = abs(observation.angle) * 180 / .pi
+        let tilt = abs(Double(observation.angle)) * 180 / Double.pi
         if tilt > maxTiltDegrees {
             return SCRuleResult(passed: false,
                                 message: String(format: "Horizon is tilted %.1f° — straighten the camera", tilt),

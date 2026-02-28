@@ -35,10 +35,10 @@ public struct SCDistanceRule: SCFrameRule {
             return SCRuleResult(passed: true, message: "Subject not detected", severity: severity)
         }
 
-        // Use the largest salient bounding box as the main subject.
-        let main = objects.max { a, b in
-            a.boundingBox.width * a.boundingBox.height < b.boundingBox.width * b.boundingBox.height
-        }!
+        // Use the highest-confidence salient object as the main subject.
+        // Confidence reflects saliency strength, not bounding-box size, so a small
+        // but highly salient subject (e.g. a ring on a dark surface) is selected correctly.
+        let main = objects.max { a, b in a.confidence < b.confidence }!
         let coverage = Float(main.boundingBox.width * main.boundingBox.height)
 
         if coverage < minCoverage {
