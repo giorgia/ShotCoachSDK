@@ -12,17 +12,32 @@ public actor SCFrameAnalyzer {
         self.rules = rules
     }
 
+    /// Convenience initialiser that pulls `onDeviceRules` from a category config.
+    public init(category: any SCCategoryConfig) {
+        self.rules = category.onDeviceRules
+    }
+
     /// Sets the delegate that receives frame and cloud analysis events.
     /// The delegate is held weakly via `_delegateObject`; retain it in the caller.
     public func setDelegate(_ delegate: (any SCAnalysisDelegate)?) {
         self.delegate = delegate
     }
 
-    /// Analyses `frame` against all rules concurrently.
-    /// Calls are silently dropped if fewer than 1500 ms have elapsed since the last analysis.
-    public func analyze(_ frame: SCFrame) async {
+    /// Returns the most recent `SCFrameResult`, or a default "initializing" result
+    /// if no analysis has been run yet.
+    public func lastFrameResult() -> SCFrameResult {
+        return lastResult
+    }
+
+    /// Analyses `frame` against all rules concurrently and returns the aggregated result.
+    /// If fewer than 1500 ms have elapsed since the last analysis, the previous result
+    /// is returned immediately without re-running the rules.
+    @discardableResult
+    public func analyze(_ frame: SCFrame) async -> SCFrameResult {
         let now = Date()
-        guard now.timeIntervalSince(lastAnalysisDate) >= throttleInterval else { return }
+        guard now.timeIntervalSince(lastAnalysisDate) >= throttleInterval else {
+            return lastResult
+        }
         lastAnalysisDate = now
 
         let start = ContinuousClock.now
@@ -36,8 +51,10 @@ public actor SCFrameAnalyzer {
                 }
             }
             for await (id, result) in group {
-                assert(ruleResults[id] == nil,
-                       "Duplicate ruleID '\(id)' — only the last result will be kept")
+                // precondition (not assert) so duplicate ruleIDs crash in both
+                // debug and release builds — silent overwrites corrupt analytics data.
+                precondition(ruleResults[id] == nil,
+                             "Duplicate ruleID '\(id)' — each SCFrameRule must have a unique ruleID")
                 ruleResults[id] = result
             }
         }
@@ -56,7 +73,9 @@ public actor SCFrameAnalyzer {
             processingMs: processingMs
         )
 
+        lastResult = frameResult
         notifyDelegate(with: frameResult)
+        return frameResult
     }
 
     // MARK: - Testing
@@ -81,6 +100,12 @@ public actor SCFrameAnalyzer {
 
     private var lastAnalysisDate: Date = .distantPast
     private let throttleInterval: TimeInterval = 1.5
+    private var lastResult: SCFrameResult = SCFrameResult(
+        rules: [:],
+        overallGuidance: "Initializing",
+        isReadyToCapture: false,
+        processingMs: 0
+    )
 
     /// Returns the human-readable message from the highest-severity failing rule.
     private func topFailureMessage(in results: [String: SCRuleResult]) -> String {
