@@ -3,8 +3,9 @@ import CoreVideo
 
 /// A camera frame passed to on-device analysis rules.
 /// SAFETY: @unchecked Sendable because CVPixelBuffer is a CF reference type.
-/// All SCFrameRule.evaluate(_:) calls are read-only — no CVPixelBufferLockBaseAddress
-/// occurs at this layer, so concurrent rule dispatch is safe.
+/// Rules that sample pixel data must acquire a .readOnly lock via CVPixelBufferLockBaseAddress.
+/// Multiple concurrent .readOnly locks on the same buffer are safe per CoreVideo documentation;
+/// rules must never acquire a writable lock ([]) from within evaluate(_:).
 public struct SCFrame: @unchecked Sendable, Codable {
     public let timestamp: Double
     public let pixelBuffer: CVPixelBuffer

@@ -98,8 +98,8 @@ perf: reduce SCFrameAnalyzer allocation in hot path
 ```
 Week:           1
 Phase:          Scaffolding
-Last completed: Task 02 — SCCloudResult (score:Int, SCIssue, SCRecommendation, rawJSON), SCFrame (pixelBuffer), SCFrameRule (ruleID, evaluate, feedbackMessage, severity with defaults), SCIssue, SCRecommendation, SCImpactLevel — swift build clean (1.14s)
-Next task:      Week 1 / Task 03
-Branch:         feat/week1-scaffold
+Last completed: Task 03 — 6 SCFrameRule implementations (SCBrightnessRule, SCBlurRule, SCHorizonRule, SCClutterRule, SCDistanceRule, SCReflectionRule) + 21 XCTests (functional + <80ms performance) — swift test 21/21 (1.23s)
+Next task:      Week 1 / Task 04
+Branch:         feat/week1-task03-rules
 Last tag:       (none)
 ```
