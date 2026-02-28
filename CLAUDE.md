@@ -98,8 +98,8 @@ perf: reduce SCFrameAnalyzer allocation in hot path
 ```
 Week:           1
 Phase:          Scaffolding
-Last completed: Task 04 — SCCategoryConfig + SCCloudProvider + SCAnalysisDelegate (requirements + defaults), SCFrameAnalyzer (concurrent dispatch, 1500ms throttle, @MainActor delegate) + 7 AnalyzerTests — swift test 28/28 (0.63s)
-Next task:      Week 1 / Task 05
-Branch:         feat/week1-task04-analyzer
+Last completed: Task 05 — SCKeychainService (Keychain CRUD, no value logging), SCCloudError (Codable, networkFailure/jsonParsingFailed assoc values), SCOpenAIProvider (GPT-4o, CoreGraphics resize, 3x retry), SCFrameAnalyzer (init(category:), @discardableResult analyze → SCFrameResult, lastResult), SCCameraSession (NSObject+AVFoundation, async capturePhoto, frame→analyzer→delegate bridge) — swift build clean, swift test 29/29 (0.65s)
+Next task:      Week 1 / Task 06
+Branch:         feat/week1-task05-cloud-engine
 Last tag:       (none)
 ```
