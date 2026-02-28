@@ -147,6 +147,22 @@ final class AnalyzerTests: XCTestCase {
         XCTAssertEqual(count, 2)
     }
 
+    // MARK: - Edge cases
+
+    func testAnalyzer_zeroRulesIsReady() async {
+        let analyzer = SCFrameAnalyzer(rules: [])
+        let spy = await MainActor.run { SpyDelegate() }
+        await analyzer.setDelegate(spy)
+
+        await analyzer.analyze(makeFrame())
+        await flushMainActor()
+
+        let updates = await MainActor.run { spy.updates }
+        XCTAssertEqual(updates.count, 1)
+        XCTAssertTrue(updates[0].isReadyToCapture)
+        XCTAssertEqual(updates[0].overallGuidance, "Ready to shoot")
+    }
+
     // MARK: - No delegate
 
     func testAnalyzer_noDelegateSilentlySucceeds() async {

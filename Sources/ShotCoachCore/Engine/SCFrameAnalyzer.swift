@@ -13,7 +13,7 @@ public actor SCFrameAnalyzer {
     }
 
     /// Sets the delegate that receives frame and cloud analysis events.
-    /// The delegate is held weakly; retain it in the caller.
+    /// The delegate is held weakly via `_delegateObject`; retain it in the caller.
     public func setDelegate(_ delegate: (any SCAnalysisDelegate)?) {
         self.delegate = delegate
     }
@@ -25,7 +25,7 @@ public actor SCFrameAnalyzer {
         guard now.timeIntervalSince(lastAnalysisDate) >= throttleInterval else { return }
         lastAnalysisDate = now
 
-        let start = Date()
+        let start = ContinuousClock.now
 
         // Run every rule concurrently; collect keyed results.
         var ruleResults: [String: SCRuleResult] = [:]
@@ -36,13 +36,18 @@ public actor SCFrameAnalyzer {
                 }
             }
             for await (id, result) in group {
+                assert(ruleResults[id] == nil,
+                       "Duplicate ruleID '\(id)' — only the last result will be kept")
                 ruleResults[id] = result
             }
         }
 
-        let processingMs = Date().timeIntervalSince(start) * 1000
-        let allPassed    = ruleResults.values.allSatisfy(\.passed)
-        let guidance     = allPassed ? "Ready to shoot" : topFailureMessage(in: ruleResults)
+        let elapsed      = ContinuousClock.now - start
+        let (sec, atto)  = elapsed.components
+        let processingMs = Double(sec) * 1000 + Double(atto) / 1_000_000_000_000_000
+
+        let allPassed = ruleResults.values.allSatisfy(\.passed)
+        let guidance  = allPassed ? "Ready to shoot" : topFailureMessage(in: ruleResults)
 
         let frameResult = SCFrameResult(
             rules: ruleResults,
@@ -56,15 +61,24 @@ public actor SCFrameAnalyzer {
 
     // MARK: - Testing
 
+#if DEBUG
     /// Resets the throttle timestamp so the next `analyze` call is guaranteed to run.
-    /// For use in unit tests only.
+    /// For use in unit tests only — stripped from release builds.
     func resetThrottleForTesting() {
         lastAnalysisDate = .distantPast
     }
+#endif
 
     // MARK: - Private
 
-    private weak var delegate: (any SCAnalysisDelegate)?
+    // `weak` on a protocol existential is unsound; store the delegate as a weak AnyObject
+    // and re-type on access. SCAnalysisDelegate: AnyObject guarantees this cast succeeds.
+    private weak var _delegateObject: AnyObject?
+    private var delegate: (any SCAnalysisDelegate)? {
+        get { _delegateObject as? any SCAnalysisDelegate }
+        set { _delegateObject = newValue }
+    }
+
     private var lastAnalysisDate: Date = .distantPast
     private let throttleInterval: TimeInterval = 1.5
 
@@ -84,12 +98,11 @@ public actor SCFrameAnalyzer {
         }
     }
 
-    /// Dispatches the delegate callback on the MainActor.
+    /// Schedules the delegate callback on the MainActor (fire-and-forget).
     private func notifyDelegate(with result: SCFrameResult) {
         let capturedDelegate = delegate
-        let capturedSelf     = self
         Task { @MainActor in
-            capturedDelegate?.analyzer(capturedSelf, didUpdate: result)
+            capturedDelegate?.analyzer(self, didUpdate: result)
         }
     }
 }

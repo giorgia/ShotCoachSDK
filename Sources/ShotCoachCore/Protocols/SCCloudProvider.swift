@@ -9,6 +9,8 @@ public protocol SCCloudProvider: Sendable {
 
 public extension SCCloudProvider {
     func analyze(photo: SCPhoto, prompt: String) async throws -> SCCloudResult {
-        throw SCCloudError.networkFailure
+        // Default signals "no provider configured" so callers can distinguish this
+        // from a genuine network failure.
+        throw SCCloudError.notConfigured
     }
 }

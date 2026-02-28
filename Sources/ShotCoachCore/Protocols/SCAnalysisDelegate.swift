@@ -1,7 +1,7 @@
 import Foundation
 
 /// Receives real-time frame analysis and post-capture cloud analysis events.
-/// All callbacks are dispatched on @MainActor.
+/// All callbacks are scheduled on @MainActor via a fire-and-forget Task.
 @MainActor
 public protocol SCAnalysisDelegate: AnyObject {
     /// Called every time SCFrameAnalyzer produces a new aggregated frame result
