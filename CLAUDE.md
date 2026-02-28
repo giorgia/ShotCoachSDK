@@ -98,8 +98,8 @@ perf: reduce SCFrameAnalyzer allocation in hot path
 ```
 Week:           1
 Phase:          Scaffolding
-Last completed: Task 03 — 6 SCFrameRule implementations (SCBrightnessRule, SCBlurRule, SCHorizonRule, SCClutterRule, SCDistanceRule, SCReflectionRule) + 21 XCTests (functional + <80ms performance) — swift test 21/21 (1.23s)
-Next task:      Week 1 / Task 04
-Branch:         feat/week1-task03-rules
+Last completed: Task 04 — SCCategoryConfig + SCCloudProvider + SCAnalysisDelegate (requirements + defaults), SCFrameAnalyzer (concurrent dispatch, 1500ms throttle, @MainActor delegate) + 7 AnalyzerTests — swift test 28/28 (0.63s)
+Next task:      Week 1 / Task 05
+Branch:         feat/week1-task04-analyzer
 Last tag:       (none)
 ```
