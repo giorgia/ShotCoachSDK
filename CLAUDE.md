@@ -80,6 +80,11 @@ fix: SCBrightnessRule false positive on HDR buffers
 perf: reduce SCFrameAnalyzer allocation in hot path
 ```
 
+## Master Build Plan
+
+Full task specifications are in `/Users/giorgiamarenda/Projects/ShotCoach/shotcoach-master-plan.html`.
+Always read that file before starting a new task — it contains the exact Claude Code prompt, deliverables, and acceptance criteria for every week/task.
+
 ## Related Repo
 
 **ListingApp** lives at `../ListingApp` (sibling directory). During development it references this SDK via local path:
@@ -96,10 +101,14 @@ perf: reduce SCFrameAnalyzer allocation in hot path
 ## Current Phase
 
 ```
-Week:           1
-Phase:          Scaffolding
-Last completed: Task 07 — ShotCoachUI layer: ShotCoach (@MainActor ObservableObject facade), AVCapturePreviewView (UIViewRepresentable, iOS/macOS safe), FeedbackPill/FeedbackStack/ReadyIndicator/BoundingBoxOverlay overlays, SCCameraGuidanceView/SCResultsView/SCShotChecklistView views — swift build clean, swift test 50/50 (0.60s)
-Next task:      Week 1 / Task 08
+Week:           2
+Phase:          ShotCoachUI + App Integration
+Last completed: Plan W2/T02 — ShotCoachUI layer complete: ShotCoach facade, overlays
+                (FeedbackPill/Stack/ReadyIndicator/BoundingBoxOverlay), views
+                (SCCameraGuidanceView/SCResultsView/SCShotChecklistView) —
+                swift build clean, swift test 50/50 (0.60s)
+Next task:      Plan W2/T03 — App: Camera feature (SCBuiltInCategory.homeListing)
+                             → ListingApp repo, not SDK repo
 Branch:         (none — on main)
 Last tag:       (none)
 ```
