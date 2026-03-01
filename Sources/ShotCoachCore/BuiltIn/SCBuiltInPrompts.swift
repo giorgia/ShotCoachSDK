@@ -2,7 +2,9 @@ import Foundation
 
 /// GPT-4o prompt templates for each built-in SCBuiltInCategory.
 /// Prompts are semi-stable: they may improve in patch releases without a major version bump.
-enum SCBuiltInPrompts {
+/// This type is intentionally `internal` — `SCBuiltInCategory.cloudPrompt(for:)` is the
+/// stable public API surface.
+internal enum SCBuiltInPrompts {
 
     static func prompt(category: SCBuiltInCategory, shot: SCShotType) -> String {
         switch category {
@@ -27,7 +29,7 @@ enum SCBuiltInPrompts {
         default:                 context = "a room in the home"
         }
         return """
-            Analyse this real-estate listing photo of \(context). Evaluate:
+            Analyze this real-estate listing photo of \(context). Evaluate:
             • Natural light quality, evenness, and absence of harsh shadows
             • Camera level — architectural lines should be vertical and straight
             • Image sharpness, focus, and motion blur
@@ -54,13 +56,13 @@ enum SCBuiltInPrompts {
         default:                       context = "a vehicle angle"
         }
         return """
-            Analyse this car listing photo of \(context). Evaluate:
+            Analyze this car listing photo of \(context). Evaluate:
             • Lighting quality — even coverage, absence of blown highlights or deep shadows
             • Reflections and glare on body panels, glass, or chrome trim
             • Sharpness and depth of field across the vehicle
             • Subject distance and framing — is the whole subject in shot?
             • Background — is it clean, appropriate, and non-distracting?
-            • Visible dirt, scratches, or damage visible in the frame
+            • Dirt, scratches, or damage visible in the frame
             Return honest, actionable feedback a photographer can act on immediately.
             """
     }
@@ -70,16 +72,16 @@ enum SCBuiltInPrompts {
     private static func productPhoto(_ shot: SCShotType) -> String {
         let context: String
         switch shot.id {
-        case "front_view":  context = "the front face of the product"
-        case "back_view":   context = "the back of the product"
-        case "side_view":   context = "a side profile of the product"
-        case "top_view":    context = "a top-down view of the product"
-        case "detail":      context = "a close-up detail of the product"
-        case "lifestyle":   context = "the product in a lifestyle or in-use setting"
-        default:            context = "the product"
+        case "front_view":         context = "the front face of the product"
+        case "back_view":          context = "the back of the product"
+        case "side_view":          context = "a side profile of the product"
+        case "top_view":           context = "a top-down view of the product"
+        case "detail":             context = "a close-up detail of the product"
+        case "product_lifestyle":  context = "the product in a lifestyle or in-use setting"
+        default:                   context = "the product"
         }
         return """
-            Analyse this e-commerce product photo showing \(context). Evaluate:
+            Analyze this e-commerce product photo showing \(context). Evaluate:
             • Exposure accuracy and white balance — colours should be true-to-life
             • Sharpness and fine-detail rendering across the product surface
             • Reflections or unwanted glare on product materials
@@ -95,16 +97,16 @@ enum SCBuiltInPrompts {
     private static func foodPhoto(_ shot: SCShotType) -> String {
         let context: String
         switch shot.id {
-        case "hero":         context = "an overhead hero shot of the dish"
-        case "side_angle":   context = "a 45-degree side-angle shot of the dish"
-        case "close_detail": context = "a close-up detail of the hero element"
-        case "full_plate":   context = "the complete plated dish"
-        case "lifestyle":    context = "the dish in a lifestyle or environmental setting"
-        default:             context = "the dish"
+        case "hero":           context = "an overhead hero shot of the dish"
+        case "side_angle":     context = "a 45-degree side-angle shot of the dish"
+        case "close_detail":   context = "a close-up detail of the hero element"
+        case "full_plate":     context = "the complete plated dish"
+        case "food_lifestyle": context = "the dish in a lifestyle or environmental setting"
+        default:               context = "the dish"
         }
         return """
-            Analyse this food photography shot — \(context). Evaluate:
-            • Warmth, colour accuracy, and flattery of the lighting on the food
+            Analyze this food photography shot — \(context). Evaluate:
+            • Warmth, color accuracy, and flattery of the lighting on the food
             • Sharpness and depth of field on the primary hero element
             • Composition, styling, and prop selection
             • Background and surface texture — does it complement the food?

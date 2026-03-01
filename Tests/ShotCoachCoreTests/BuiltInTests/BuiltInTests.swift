@@ -58,6 +58,14 @@ final class BuiltInTests: XCTestCase {
         XCTAssertEqual(SCBuiltInCategory.foodPhoto.requiredShots.count, 5)
     }
 
+    func testBuiltIn_shotIDsUniqueWithinCategory() {
+        for cat in allCategories {
+            let ids = cat.requiredShots.map(\.id)
+            XCTAssertEqual(ids.count, Set(ids).count,
+                           "\(cat.categoryID) has duplicate shot IDs")
+        }
+    }
+
     // MARK: - Cloud prompts
 
     func testBuiltIn_allShotsHaveNonEmptyCloudPrompt() {
@@ -74,6 +82,15 @@ final class BuiltInTests: XCTestCase {
         let unknown = SCShotType(id: "unknown_shot", displayName: "Unknown")
         for cat in allCategories {
             XCTAssertFalse(cat.cloudPrompt(for: unknown).isEmpty)
+        }
+    }
+
+    func testBuiltIn_promptsArePerShot() {
+        for cat in allCategories {
+            let prompts = cat.requiredShots.map { cat.cloudPrompt(for: $0) }
+            // Each shot should produce a distinct prompt string.
+            XCTAssertEqual(prompts.count, Set(prompts).count,
+                           "\(cat.categoryID) must return a unique prompt per shot")
         }
     }
 
@@ -117,6 +134,17 @@ final class BuiltInTests: XCTestCase {
         XCTAssertEqual(extended.displayName,  SCBuiltInCategory.carListing.displayName)
     }
 
+    func testExtending_zeroMutationIdenticalToBase() {
+        let base = SCBuiltInCategory.productPhoto
+        let extended = base.extending { _ in }
+        XCTAssertEqual(extended.categoryID,          base.categoryID)
+        XCTAssertEqual(extended.displayName,         base.displayName)
+        XCTAssertEqual(extended.requiredShots,       base.requiredShots)
+        XCTAssertEqual(extended.onDeviceRules.map(\.ruleID), base.onDeviceRules.map(\.ruleID))
+        let shot = base.requiredShots[0]
+        XCTAssertEqual(extended.cloudPrompt(for: shot), base.cloudPrompt(for: shot))
+    }
+
     func testExtending_multipleAppendsConcatenate() {
         let extended = SCBuiltInCategory.productPhoto.extending {
             $0.appendPrompt("Focus on the label.")
@@ -139,13 +167,25 @@ final class BuiltInTests: XCTestCase {
     }
 
     func testExtending_isCodable() throws {
+        let extra   = SCShotType(id: "steam_close", displayName: "Steam Close-up")
         let extended = SCBuiltInCategory.foodPhoto.extending {
             $0.appendPrompt("Emphasize steam and freshness.")
-            $0.addRequiredShot(SCShotType(id: "steam_close", displayName: "Steam Close-up"))
+            $0.addRequiredShot(extra)
         }
         let data    = try JSONEncoder().encode(extended)
         let decoded = try JSONDecoder().decode(SCCategoryOverride.self, from: data)
+
         XCTAssertEqual(decoded.categoryID,          extended.categoryID)
         XCTAssertEqual(decoded.requiredShots.count, extended.requiredShots.count)
+
+        // Shot order must be preserved.
+        let decodedIDs  = decoded.requiredShots.map(\.id)
+        let extendedIDs = extended.requiredShots.map(\.id)
+        XCTAssertEqual(decodedIDs, extendedIDs)
+
+        // extraPrompt must survive the round-trip (verified via cloudPrompt output).
+        let shot = SCBuiltInCategory.foodPhoto.requiredShots[0]
+        XCTAssertEqual(decoded.cloudPrompt(for: shot), extended.cloudPrompt(for: shot))
+        XCTAssertTrue(decoded.cloudPrompt(for: shot).contains("steam and freshness"))
     }
 }
