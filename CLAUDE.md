@@ -27,7 +27,7 @@ Sources/
 │   ├── Rules/        ← SCBrightnessRule, SCHorizonRule, SCBlurRule, SCClutterRule, SCDistanceRule, SCReflectionRule
 │   ├── Engine/       ← SCFrameAnalyzer, SCCameraSession
 │   ├── Cloud/        ← SCOpenAIProvider, SCCloudError, SCKeychainService
-│   └── BuiltIn/      ← SCBuiltInCategory, SCBuiltInPrompts
+│   └── BuiltIn/      ← SCBuiltInCategory, SCBuiltInPrompts, SCCategoryOverride
 ├── ShotCoachUI/
 │   ├── Theme/        ← SCTheme, SCThemePresets, SCThemeEnvironmentKey
 │   ├── Overlay/      ← FeedbackPill, FeedbackStack, ReadyIndicator, BoundingBoxOverlay
@@ -98,8 +98,8 @@ perf: reduce SCFrameAnalyzer allocation in hot path
 ```
 Week:           1
 Phase:          Scaffolding
-Last completed: Task 06 — SCBuiltInCategory (4 cases: homeListing/carListing/productPhoto/foodPhoto, full SCCategoryConfig conformance, Codable+Sendable), SCBuiltInPrompts (shot-specific GPT-4o templates per category), SCCategoryOverride (.extending builder, appendPrompt/addRequiredShot, Codable) — swift build clean, swift test 47/47 (0.69s)
+Last completed: Task 06 — SCBuiltInCategory (4 cases, SCCategoryConfig conformance), SCBuiltInPrompts (shot-specific GPT-4o templates), SCCategoryOverride (.extending builder, manual Codable, addRule) + 21 BuiltInTests — swift test 50/50 (0.53s)
 Next task:      Week 1 / Task 07
-Branch:         feat/week1-task06-builtin
+Branch:         (none — on main)
 Last tag:       (none)
 ```
