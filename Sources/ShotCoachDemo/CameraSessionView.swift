@@ -10,8 +10,9 @@ import ShotCoachUI
 ///
 /// ```
 /// Step 1 — ShotCoach(category: .homeListing, apiKey: key)
-/// Step 2 — SCCameraGuidanceView(sdk: sdk).theme(theme)
-/// Step 3 — .onResult { photo in … }
+/// Step 2 — SCCameraGuidanceView(sdk: sdk)
+///               .onResult { photo in … }   // ← must come before .theme()
+///               .theme(theme)
 /// ```
 struct CameraSessionView: View {
 

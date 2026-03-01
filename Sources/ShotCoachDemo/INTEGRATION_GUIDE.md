@@ -17,12 +17,14 @@ import ShotCoachUI
 let sdk = ShotCoach(category: .homeListing, apiKey: myApiKey)
 
 // 2. Present the camera view — works like any SwiftUI view.
+//    Call .onResult before .theme(): .theme() erases the concrete type,
+//    making Self-returning modifiers unavailable afterward.
 SCCameraGuidanceView(sdk: sdk)
-    .theme(SCTheme(accent: .green, overlayStyle: .frostedGlass))
     .onResult { photo in
         // photo.cloudResult is nil here; GPT-4o populates it asynchronously.
         save(photo)
     }
+    .theme(SCTheme(accent: .green, overlayStyle: .frostedGlass))
 ```
 
 Four built-in categories are available out of the box:

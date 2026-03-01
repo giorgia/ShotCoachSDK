@@ -72,7 +72,7 @@ struct CategoryPickerView: View {
     @State private var activeCategory: CategoryInfo?
     @State private var showKeySetup = false
 
-    private var hasAPIKey: Bool { SCKeychainService.load(key: "openai_api_key") != nil }
+    @State private var hasAPIKey = SCKeychainService.load(key: "openai_api_key") != nil
 
     private let columns = [
         GridItem(.flexible(), spacing: 14),
@@ -101,7 +101,9 @@ struct CategoryPickerView: View {
                     .help(hasAPIKey ? "API key configured — tap to update" : "Add OpenAI API key")
                 }
             }
-            .sheet(isPresented: $showKeySetup) {
+            .sheet(isPresented: $showKeySetup, onDismiss: {
+                hasAPIKey = SCKeychainService.load(key: "openai_api_key") != nil
+            }) {
                 APIKeySetupView { showKeySetup = false }
             }
         }
