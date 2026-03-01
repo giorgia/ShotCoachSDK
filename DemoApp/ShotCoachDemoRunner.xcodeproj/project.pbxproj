@@ -1,0 +1,360 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 60;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1100000000000000000000A1 /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2100000000000000000000A1 /* SessionStore.swift */; };
+		1100000000000000000000A2 /* ShotCoachDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2100000000000000000000A2 /* ShotCoachDemoApp.swift */; };
+		1100000000000000000000A3 /* APIKeySetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2100000000000000000000A3 /* APIKeySetupView.swift */; };
+		1100000000000000000000A4 /* CategoryPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2100000000000000000000A4 /* CategoryPickerView.swift */; };
+		1100000000000000000000A5 /* CameraSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2100000000000000000000A5 /* CameraSessionView.swift */; };
+		1100000000000000000000A6 /* GalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2100000000000000000000A6 /* GalleryView.swift */; };
+		1100000000000000000000B1 /* ShotCoachCore in Frameworks */ = {isa = PBXBuildFile; productRef = 4100000000000000000000B1 /* ShotCoachCore */; };
+		1100000000000000000000B2 /* ShotCoachUI in Frameworks */ = {isa = PBXBuildFile; productRef = 4100000000000000000000B2 /* ShotCoachUI */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		2100000000000000000000A1 /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SessionStore.swift; path = ../Sources/ShotCoachDemo/SessionStore.swift; sourceTree = "<group>"; };
+		2100000000000000000000A2 /* ShotCoachDemoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ShotCoachDemoApp.swift; path = ../Sources/ShotCoachDemo/ShotCoachDemoApp.swift; sourceTree = "<group>"; };
+		2100000000000000000000A3 /* APIKeySetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = APIKeySetupView.swift; path = ../Sources/ShotCoachDemo/APIKeySetupView.swift; sourceTree = "<group>"; };
+		2100000000000000000000A4 /* CategoryPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CategoryPickerView.swift; path = ../Sources/ShotCoachDemo/CategoryPickerView.swift; sourceTree = "<group>"; };
+		2100000000000000000000A5 /* CameraSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CameraSessionView.swift; path = ../Sources/ShotCoachDemo/CameraSessionView.swift; sourceTree = "<group>"; };
+		2100000000000000000000A6 /* GalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = GalleryView.swift; path = ../Sources/ShotCoachDemo/GalleryView.swift; sourceTree = "<group>"; };
+		2100000000000000000000C1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = ../Sources/ShotCoachDemo/Info.plist; sourceTree = "<group>"; };
+		6100000000000000000000A1 /* ShotCoachDemoRunner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ShotCoachDemoRunner.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		7100000000000000000000B0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1100000000000000000000B1 /* ShotCoachCore in Frameworks */,
+				1100000000000000000000B2 /* ShotCoachUI in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0100000000000000000000A0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				6100000000000000000000A1 /* ShotCoachDemoRunner.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		8100000000000000000000A0 = {
+			isa = PBXGroup;
+			children = (
+				9100000000000000000000A0 /* Sources */,
+				2100000000000000000000C1 /* Info.plist */,
+				0100000000000000000000A0 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		9100000000000000000000A0 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				2100000000000000000000A1 /* SessionStore.swift */,
+				2100000000000000000000A2 /* ShotCoachDemoApp.swift */,
+				2100000000000000000000A3 /* APIKeySetupView.swift */,
+				2100000000000000000000A4 /* CategoryPickerView.swift */,
+				2100000000000000000000A5 /* CameraSessionView.swift */,
+				2100000000000000000000A6 /* GalleryView.swift */,
+			);
+			name = Sources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		B100000000000000000000A1 /* ShotCoachDemoRunner */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C100000000000000000000B1 /* Build configuration list for PBXNativeTarget "ShotCoachDemoRunner" */;
+			buildPhases = (
+				7100000000000000000000A0 /* Sources */,
+				7100000000000000000000B0 /* Frameworks */,
+				7100000000000000000000C0 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ShotCoachDemoRunner;
+			packageProductDependencies = (
+				4100000000000000000000B1 /* ShotCoachCore */,
+				4100000000000000000000B2 /* ShotCoachUI */,
+			);
+			productName = ShotCoachDemoRunner;
+			productReference = 6100000000000000000000A1 /* ShotCoachDemoRunner.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A100000000000000000000A1 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					B100000000000000000000A1 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+				};
+			};
+			buildConfigurationList = C100000000000000000000A1 /* Build configuration list for PBXProject "ShotCoachDemoRunner" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 8100000000000000000000A0;
+			packageReferences = (
+				E100000000000000000000A1 /* XCLocalSwiftPackageReference "../" */,
+			);
+			productRefGroup = 0100000000000000000000A0 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				B100000000000000000000A1 /* ShotCoachDemoRunner */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		7100000000000000000000C0 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		7100000000000000000000A0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1100000000000000000000A1 /* SessionStore.swift in Sources */,
+				1100000000000000000000A2 /* ShotCoachDemoApp.swift in Sources */,
+				1100000000000000000000A3 /* APIKeySetupView.swift in Sources */,
+				1100000000000000000000A4 /* CategoryPickerView.swift in Sources */,
+				1100000000000000000000A5 /* CameraSessionView.swift in Sources */,
+				1100000000000000000000A6 /* GalleryView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		D100000000000000000000A1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNINITIALIZED = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		D100000000000000000000A2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNINITIALIZED = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		D100000000000000000000B1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WN6G7U99K4;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ../Sources/ShotCoachDemo/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.shotcoach.demo;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D100000000000000000000B2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WN6G7U99K4;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ../Sources/ShotCoachDemo/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.shotcoach.demo;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		C100000000000000000000A1 /* Build configuration list for PBXProject "ShotCoachDemoRunner" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D100000000000000000000A1 /* Debug */,
+				D100000000000000000000A2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C100000000000000000000B1 /* Build configuration list for PBXNativeTarget "ShotCoachDemoRunner" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D100000000000000000000B1 /* Debug */,
+				D100000000000000000000B2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		E100000000000000000000A1 /* XCLocalSwiftPackageReference "../" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		4100000000000000000000B1 /* ShotCoachCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E100000000000000000000A1 /* XCLocalSwiftPackageReference "../" */;
+			productName = ShotCoachCore;
+		};
+		4100000000000000000000B2 /* ShotCoachUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E100000000000000000000A1 /* XCLocalSwiftPackageReference "../" */;
+			productName = ShotCoachUI;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = A100000000000000000000A1 /* Project object */;
+}

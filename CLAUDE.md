@@ -102,12 +102,13 @@ Always read that file before starting a new task — it contains the exact Claud
 
 ```
 Week:           2
-Phase:          ShotCoachUI + App Integration
-Last completed: Plan W2/T02 — ShotCoachUI layer complete: ShotCoach facade, overlays
-                (FeedbackPill/Stack/ReadyIndicator/BoundingBoxOverlay), views
-                (SCCameraGuidanceView/SCResultsView/SCShotChecklistView) —
-                swift build clean, swift test 50/50 (0.60s)
-Next task:      Plan W2/T03 — App: Camera feature (SCBuiltInCategory.homeListing)
+Phase:          ShotCoachUI + SDK Demo · App Camera Integration
+Last completed: Plan W2/T03 — ShotCoachDemo complete: SessionStore, APIKeySetupView
+                (optional key + Skip button), CategoryPickerView (4 cards + key toolbar
+                icon), CameraSessionView (annotated integration reference), GalleryView
+                ("Local" badge when no key), INTEGRATION_GUIDE.md, DemoApp Xcode project
+                (DemoApp/ShotCoachDemoRunner.xcodeproj) — swift build clean, swift test 50/50
+Next task:      Plan W2/T04 — App: Camera feature (SCBuiltInCategory.homeListing)
                              → ListingApp repo, not SDK repo
 Branch:         (none — on main)
 Last tag:       (none)

@@ -24,7 +24,8 @@ let package = Package(
         .target(
             name: "ShotCoachDemo",
             dependencies: ["ShotCoachCore", "ShotCoachUI"],
-            path: "Sources/ShotCoachDemo"
+            path: "Sources/ShotCoachDemo",
+            exclude: ["INTEGRATION_GUIDE.md", "Info.plist"]  // docs + Xcode app plist
         ),
         .testTarget(
             name: "ShotCoachCoreTests",
