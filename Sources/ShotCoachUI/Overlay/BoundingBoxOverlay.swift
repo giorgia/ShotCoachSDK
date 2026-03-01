@@ -1,12 +1,19 @@
 import SwiftUI
 
 /// Draws normalized bounding boxes over a view's frame.
-/// Coordinates are in unit space (0...1) on both axes, anchored to the view's bounds.
-/// Use this to highlight detected objects or regions of interest from a Vision request.
+/// Coordinates are in unit space (0...1) on both axes, anchored to the view's bounds,
+/// with the **top-left as the origin** (UIKit/SwiftUI convention).
+///
+/// > Important: Vision framework observations use a **bottom-left** origin. Flip the Y-axis
+/// > before passing Vision rects:
+/// > ```swift
+/// > let flipped = obs.boundingBox.applying(
+/// >     CGAffineTransform(scaleX: 1, y: -1).translatedBy(x: 0, y: -1))
+/// > ```
 ///
 /// ```swift
 /// cameraPreview
-///     .overlay(BoundingBoxOverlay(boxes: detectedRects, color: .yellow))
+///     .overlay(BoundingBoxOverlay(boxes: normalizedRects, color: .yellow))
 /// ```
 public struct BoundingBoxOverlay: View {
 
@@ -14,7 +21,7 @@ public struct BoundingBoxOverlay: View {
     let color: Color
 
     /// - Parameters:
-    ///   - boxes: Bounding rects in normalized unit space (0...1).
+    ///   - boxes: Bounding rects in normalized unit space (0...1), top-left origin.
     ///   - color: Stroke color for the boxes. Default: `.yellow`.
     public init(boxes: [CGRect], color: Color = .yellow) {
         self.boxes = boxes

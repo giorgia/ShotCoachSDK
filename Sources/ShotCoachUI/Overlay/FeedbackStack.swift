@@ -29,8 +29,14 @@ public struct FeedbackStack: View {
     private var failingResults: [FailingResult] {
         result.rules
             .filter { !$0.value.passed }
-            .sorted { severityRank($0.value.severity) > severityRank($1.value.severity) }
-            .map    { FailingResult(ruleID: $0.key, ruleResult: $0.value) }
+            // Secondary sort by ruleID ensures a stable, deterministic order across frames.
+            // Without it, same-severity rules can swap positions every 1.5 s (dict order).
+            .sorted {
+                let r0 = severityRank($0.value.severity)
+                let r1 = severityRank($1.value.severity)
+                return r0 != r1 ? r0 > r1 : $0.key < $1.key
+            }
+            .map { FailingResult(ruleID: $0.key, ruleResult: $0.value) }
     }
 
     private func severityRank(_ s: SCRuleSeverity) -> Int {

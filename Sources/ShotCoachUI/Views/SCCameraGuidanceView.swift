@@ -46,16 +46,17 @@ public struct SCCameraGuidanceView: View {
         }
         .onAppear  { sdk.start() }
         .onDisappear { sdk.stop() }
-        .onChange(of: sdk.photos.count) { count in
-            guard count > 0 else { return }
-            onResultHandler?(sdk.photos[count - 1])
+        // onChange(of:perform:) — available macOS 13+ / iOS 16+; closure receives the new value.
+        .onChange(of: sdk.photos.count) { newCount in
+            guard newCount > 0 else { return }
+            onResultHandler?(sdk.photos[newCount - 1])
         }
     }
 
     // MARK: - Modifier
 
-    /// Registers a closure that is called each time a photo is captured and
-    /// the cloud analysis result arrives.
+    /// Registers a closure called each time cloud analysis completes for a captured photo.
+    /// `photo.cloudResult` may be `nil` if the cloud provider failed or was not configured.
     public func onResult(_ handler: @escaping (SCPhoto) -> Void) -> Self {
         var copy = self
         copy.onResultHandler = handler

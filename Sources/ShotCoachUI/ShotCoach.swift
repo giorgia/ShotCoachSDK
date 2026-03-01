@@ -34,6 +34,10 @@ public final class ShotCoach: ObservableObject {
     public let category: any SCCategoryConfig
 
     /// The underlying `AVCaptureSession` — consumed by `AVCapturePreviewView`.
+    /// Intended for custom preview-layer integrations; consumers using `SCCameraGuidanceView`
+    /// do not need to access this directly.
+    /// **Do not add or remove inputs/outputs.** Mutating the session bypasses
+    /// `SCCameraSession`'s internal pipeline and may cause capture failures or crashes.
     public var captureSession: AVCaptureSession { cameraSession.nativeSession }
 
     // MARK: - Init
@@ -67,13 +71,18 @@ public final class ShotCoach: ObservableObject {
     /// Stops the camera capture session. Call when the guidance view disappears.
     public func stop()  { cameraSession.stop() }
 
-    /// Captures the current shot. The photo is appended to `photos` and the session
-    /// advances to the next required shot once cloud analysis completes.
+    /// Captures the current shot.
+    ///
+    /// `isCapturing` is `true` only for the duration of the physical shutter operation
+    /// (typically <1 s). Cloud analysis runs concurrently in the background; the resulting
+    /// `SCPhoto` (with `cloudResult`, which may be `nil` on cloud failure) is appended to
+    /// `photos` and the session advances to the next shot when the delegate fires.
+    ///
     /// Silently no-ops if a capture is already in-flight.
     public func capturePhoto() {
         guard !isCapturing else { return }
         isCapturing = true
-        Task {
+        Task { @MainActor in
             _ = try? await cameraSession.capturePhoto()
             isCapturing = false
         }

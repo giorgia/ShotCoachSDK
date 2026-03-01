@@ -31,12 +31,16 @@ public struct SCShotChecklistView: View {
     // MARK: - Private
 
     /// IDs of all shots that precede `currentShot` in the required-shots list.
-    /// If `currentShot` is `nil` all shot IDs are returned (session complete).
+    /// - `currentShot == nil`  → session complete; returns all shot IDs.
+    /// - `currentShot` not found in `requiredShots` → defensive; returns empty set.
     private var completedShotIDs: Set<String> {
-        guard let current = sdk.currentShot,
-              let idx = sdk.category.requiredShots.firstIndex(of: current) else {
-            // nil currentShot → all shots captured (or no required shots).
+        guard let current = sdk.currentShot else {
+            // Session complete — all required shots captured.
             return Set(sdk.category.requiredShots.map(\.id))
+        }
+        guard let idx = sdk.category.requiredShots.firstIndex(of: current) else {
+            // currentShot not in requiredShots — treat as no shots completed.
+            return []
         }
         return Set(sdk.category.requiredShots.prefix(idx).map(\.id))
     }

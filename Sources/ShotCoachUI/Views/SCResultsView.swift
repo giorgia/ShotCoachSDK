@@ -66,13 +66,13 @@ public struct SCResultsView: View {
     // MARK: - Issues
 
     private func issuesSection(_ issues: [SCIssue]) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        let sorted = issues.sorted { impactRank($0.impact) > impactRank($1.impact) }
+        return VStack(alignment: .leading, spacing: 10) {
             Text("Issues")
                 .font(.headline)
-            ForEach(
-                issues.sorted { impactRank($0.impact) > impactRank($1.impact) },
-                id: \.title
-            ) { issue in
+            // Use indices as stable IDs — issue titles are not guaranteed unique.
+            ForEach(sorted.indices, id: \.self) { i in
+                let issue = sorted[i]
                 HStack(alignment: .top, spacing: 10) {
                     Circle()
                         .fill(impactColor(issue.impact))
@@ -93,13 +93,13 @@ public struct SCResultsView: View {
     // MARK: - Recommendations
 
     private func recommendationsSection(_ recs: [SCRecommendation]) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        let sorted = recs.sorted { $0.priority < $1.priority }
+        return VStack(alignment: .leading, spacing: 10) {
             Text("Recommendations")
                 .font(.headline)
-            ForEach(
-                recs.sorted { $0.priority < $1.priority },
-                id: \.text
-            ) { rec in
+            // Use indices as stable IDs — recommendation texts are not guaranteed unique.
+            ForEach(sorted.indices, id: \.self) { i in
+                let rec = sorted[i]
                 HStack(alignment: .top, spacing: 10) {
                     Image(systemName: "lightbulb.fill")
                         .foregroundStyle(.yellow)
