@@ -34,6 +34,15 @@ struct CameraSessionView: View {
     // ─────────────────────────────────────────────────────────────────────────
     @StateObject private var sdk: ShotCoach
 
+    /// Wraps SCPhoto so it can drive `.sheet(item:)` — SCPhoto is a value type
+    /// without a stable identity, so we assign one at capture time.
+    private struct ResultItem: Identifiable {
+        let id = UUID()
+        let photo: SCPhoto
+    }
+
+    @State private var resultItem: ResultItem?
+
     init(category: SCBuiltInCategory, theme: SCTheme) {
         self.category = category
         self.theme = theme
@@ -46,7 +55,7 @@ struct CameraSessionView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
+        ZStack {
 
             // ─────────────────────────────────────────────────────────────────
             // STEP 2 — Present SCCameraGuidanceView.
@@ -56,7 +65,6 @@ struct CameraSessionView: View {
             //   • FeedbackStack     — top 3 rule failures, sorted by severity
             //   • ReadyIndicator    — pulsing ring when isReadyToCapture == true
             //   • Capture button    — accent-tinted, disabled while capturing
-            //   • ShotChecklist     — tracks progress through required shots
             // All of it responds to the theme you supply below.
             // ─────────────────────────────────────────────────────────────────
             SCCameraGuidanceView(sdk: sdk)
@@ -64,10 +72,10 @@ struct CameraSessionView: View {
                 // ─────────────────────────────────────────────────────────────
                 // STEP 3 — Handle results.
                 //
-                // onResult fires immediately after capture with the new SCPhoto.
-                // photo.cloudResult is nil at first; GPT-4o populates it a few
-                // seconds later. Observe sdk.photos for live updates, or present
-                // SCResultsView which handles the async loading for you.
+                // onResult fires after capture + cloud analysis with the enriched
+                // SCPhoto (cloudResult already populated). Add it to your store and
+                // present SCResultsView — it handles the async loading shimmer if
+                // analysis is still pending.
                 //
                 // Note: call .onResult before .theme() — .theme() is a generic
                 // View modifier that erases the concrete type, so modifiers
@@ -75,6 +83,7 @@ struct CameraSessionView: View {
                 // ─────────────────────────────────────────────────────────────
                 .onResult { photo in
                     store.add(photo, categoryName: category.displayName)
+                    resultItem = ResultItem(photo: photo)
                 }
 
                 // Apply the per-category accent colour and overlay style.
@@ -82,18 +91,50 @@ struct CameraSessionView: View {
 
                 .ignoresSafeArea()
 
-            // Dismiss button — top-leading so it never overlaps the overlays.
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.body.weight(.semibold))
-                    .padding(10)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Circle())
-                    .foregroundStyle(.white)
+            // ── Top chrome: dismiss (leading) · shot progress (trailing) ─────
+            VStack {
+                HStack(alignment: .top) {
+
+                    // Dismiss button.
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.body.weight(.semibold))
+                            .padding(10)
+                            .background(.ultraThinMaterial)
+                            .clipShape(Circle())
+                            .foregroundStyle(.white)
+                    }
+
+                    Spacer()
+
+                    // Current shot name + progress counter.
+                    // sdk.currentShot advances to the next SCShotType after each capture;
+                    // it becomes nil when all required shots have been taken.
+                    if let shot = sdk.currentShot {
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text(shot.displayName)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.white)
+                            Text("Shot \(sdk.photos.count + 1) of \(sdk.category.requiredShots.count)")
+                                .font(.caption2)
+                                .foregroundStyle(.white.opacity(0.65))
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(.ultraThinMaterial)
+                        .clipShape(Capsule())
+                    }
+                }
+                .padding(16)
+
+                Spacer()
             }
-            .padding(16)
+        }
+        // Present results as a sheet as soon as onResult fires.
+        .sheet(item: $resultItem) { item in
+            SCResultsView(photo: item.photo)
         }
     }
 }

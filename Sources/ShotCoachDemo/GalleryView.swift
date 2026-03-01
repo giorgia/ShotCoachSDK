@@ -73,24 +73,32 @@ private struct PhotoThumbnail: View {
     let cloudEnabled: Bool
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            photoImage
-                .aspectRatio(1, contentMode: .fill)
-                .clipped()
+        // Color.clear with a 1:1 aspect ratio anchors the cell height to its
+        // column width — the only reliable pattern for square thumbnails inside
+        // LazyVGrid with flexible columns on iOS 16.
+        Color.clear
+            .aspectRatio(1, contentMode: .fit)
+            .overlay {
+                ZStack(alignment: .bottomTrailing) {
+                    photoImage
+                        .scaledToFill()
+                        .clipped()
 
-            scoreBadge
-                .padding(6)
-        }
+                    scoreBadge
+                        .padding(6)
+                }
+            }
+            .clipped()
     }
 
     // Platform-safe image loading: UIImage on iOS, NSImage on macOS.
+    // scaledToFill is applied in body so it receives the correct geometry from overlay.
     @ViewBuilder
     private var photoImage: some View {
 #if canImport(UIKit)
         if let ui = UIImage(data: entry.photo.imageData) {
             Image(uiImage: ui)
                 .resizable()
-                .scaledToFill()
         } else {
             Color(white: 0.15)
         }
@@ -98,7 +106,6 @@ private struct PhotoThumbnail: View {
         if let ns = NSImage(data: entry.photo.imageData) {
             Image(nsImage: ns)
                 .resizable()
-                .scaledToFill()
         } else {
             Color(white: 0.15)
         }
