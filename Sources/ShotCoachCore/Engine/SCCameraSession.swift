@@ -40,6 +40,10 @@ public final class SCCameraSession: NSObject {
         // `SCCameraSession` owns all delegate dispatch so there is no double notification.
     }
 
+    /// The underlying AVCaptureSession — passed to ShotCoachUI's preview layer.
+    /// Do not configure the session directly; use `start()`, `stop()`, and `capturePhoto()`.
+    public var nativeSession: AVCaptureSession { session }
+
     /// Starts the capture session on a background queue.
     public func start() {
         captureQueue.async { [session] in session.startRunning() }
