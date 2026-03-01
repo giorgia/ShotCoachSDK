@@ -98,8 +98,8 @@ perf: reduce SCFrameAnalyzer allocation in hot path
 ```
 Week:           1
 Phase:          Scaffolding
-Last completed: Task 06 — SCBuiltInCategory (4 cases, SCCategoryConfig conformance), SCBuiltInPrompts (shot-specific GPT-4o templates), SCCategoryOverride (.extending builder, manual Codable, addRule) + 21 BuiltInTests — swift test 50/50 (0.53s)
-Next task:      Week 1 / Task 07
+Last completed: Task 07 — ShotCoachUI layer: ShotCoach (@MainActor ObservableObject facade), AVCapturePreviewView (UIViewRepresentable, iOS/macOS safe), FeedbackPill/FeedbackStack/ReadyIndicator/BoundingBoxOverlay overlays, SCCameraGuidanceView/SCResultsView/SCShotChecklistView views — swift build clean, swift test 50/50 (0.60s)
+Next task:      Week 1 / Task 08
 Branch:         (none — on main)
 Last tag:       (none)
 ```
