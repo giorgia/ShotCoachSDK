@@ -80,23 +80,33 @@ public enum SCBuiltInCategory: String, SCCategoryConfig, Codable, Sendable {
             return [
                 SCShotType(id: "front_three_quarter", displayName: "Front 3/4",
                            classificationHints: [
-                               "car", "automobile", "vehicle", "automotive", "headlight",
-                               "hood", "bumper", "grille", "windshield", "fender",
+                               // Generic car hints live here only — front 3/4 is the
+                               // default exterior shot and wins whenever Vision sees a
+                               // car but cannot determine the angle precisely.
+                               "car", "automobile", "vehicle", "automotive",
+                               // Front-specific: grille, headlights, hood.
+                               "headlight", "hood", "grille", "windshield", "fender",
                            ]),
                 SCShotType(id: "rear_three_quarter", displayName: "Rear 3/4",
                            classificationHints: [
-                               "car", "automobile", "vehicle", "automotive", "taillight",
-                               "trunk", "bumper", "exhaust", "spoiler",
+                               // No generic car hints — avoids tying with front_three_quarter
+                               // on every car image. Wins only when Vision returns rear-specific
+                               // labels (taillights, trunk, exhaust).
+                               "taillight", "tail light", "trunk", "exhaust", "spoiler",
+                               "rear window",
                            ]),
                 SCShotType(id: "driver_side_profile", displayName: "Driver Side",
                            classificationHints: [
-                               "car", "automobile", "vehicle", "door", "wheel", "tire",
-                               "rim", "side mirror", "profile",
+                               // No generic car hints. Driver and passenger sides share the
+                               // same feature set — Vision cannot determine left vs right
+                               // from image content alone; the checklist position disambiguates.
+                               "wheel", "tire", "rim", "side mirror", "door", "hubcap",
+                               "profile",
                            ]),
                 SCShotType(id: "passenger_side_profile", displayName: "Passenger Side",
                            classificationHints: [
-                               "car", "automobile", "vehicle", "door", "wheel", "tire",
-                               "rim", "side mirror",
+                               "wheel", "tire", "rim", "side mirror", "door", "hubcap",
+                               "profile",
                            ]),
                 SCShotType(id: "dashboard", displayName: "Dashboard",
                            classificationHints: [
