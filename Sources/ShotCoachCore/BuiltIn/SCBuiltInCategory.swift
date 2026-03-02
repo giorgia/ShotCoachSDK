@@ -33,43 +33,161 @@ public enum SCBuiltInCategory: String, SCCategoryConfig, Codable, Sendable {
     public var requiredShots: [SCShotType] {
         switch self {
         case .homeListing:
+            // Hints use Vision taxonomy substrings. Multiple hints per shot let the
+            // classifier accumulate confidence across related observations (e.g. a
+            // kitchen scores on "kitchen" + "appliance" + "counter" simultaneously).
             return [
-                SCShotType(id: "living_room",       displayName: "Living Room"),
-                SCShotType(id: "kitchen",            displayName: "Kitchen"),
-                SCShotType(id: "master_bedroom",     displayName: "Master Bedroom"),
-                SCShotType(id: "bathroom",           displayName: "Bathroom"),
-                SCShotType(id: "front_exterior",     displayName: "Front Exterior"),
-                SCShotType(id: "backyard",           displayName: "Backyard"),
+                SCShotType(id: "living_room", displayName: "Living Room",
+                           classificationHints: [
+                               "living room", "living_room", "lounge", "sofa", "couch",
+                               "armchair", "ottoman", "coffee table", "rug", "carpet",
+                               "fireplace", "bookcase", "bookshelf", "curtain", "drape",
+                               "television", "tv", "entertainment",
+                           ]),
+                SCShotType(id: "kitchen", displayName: "Kitchen",
+                           classificationHints: [
+                               "kitchen", "stove", "oven", "range", "refrigerator", "fridge",
+                               "countertop", "counter", "cabinet", "cupboard", "appliance",
+                               "microwave", "dishwasher", "sink", "faucet", "cooking",
+                               "backsplash", "island",
+                           ]),
+                SCShotType(id: "master_bedroom", displayName: "Master Bedroom",
+                           classificationHints: [
+                               "bedroom", "bed", "pillow", "mattress", "duvet", "blanket",
+                               "comforter", "nightstand", "bedside", "wardrobe", "dresser",
+                               "closet", "headboard", "lamp", "sleeping",
+                           ]),
+                SCShotType(id: "bathroom", displayName: "Bathroom",
+                           classificationHints: [
+                               "bathroom", "toilet", "shower", "bathtub", "tub", "towel",
+                               "tile", "mirror", "vanity", "sink", "faucet", "lavatory",
+                               "restroom", "soap", "showerhead",
+                           ]),
+                SCShotType(id: "front_exterior", displayName: "Front Exterior",
+                           classificationHints: [
+                               "house", "building", "facade", "exterior", "architecture",
+                               "door", "driveway", "roof", "porch", "balcony", "window",
+                               "brick", "garage", "pathway", "entrance",
+                           ]),
+                SCShotType(id: "backyard", displayName: "Backyard",
+                           classificationHints: [
+                               "garden", "grass", "yard", "outdoor", "patio", "pool",
+                               "tree", "lawn", "deck", "fence", "landscape", "plant",
+                               "flower", "terrace", "pergola",
+                           ]),
             ]
         case .carListing:
             return [
-                SCShotType(id: "front_three_quarter",    displayName: "Front 3/4"),
-                SCShotType(id: "rear_three_quarter",     displayName: "Rear 3/4"),
-                SCShotType(id: "driver_side_profile",    displayName: "Driver Side"),
-                SCShotType(id: "passenger_side_profile", displayName: "Passenger Side"),
-                SCShotType(id: "dashboard",              displayName: "Dashboard"),
-                SCShotType(id: "interior_seats",         displayName: "Interior / Seats"),
-                SCShotType(id: "engine_bay",             displayName: "Engine Bay"),
-                SCShotType(id: "trunk",                  displayName: "Trunk"),
+                SCShotType(id: "front_three_quarter", displayName: "Front 3/4",
+                           classificationHints: [
+                               // Generic car hints live here only — front 3/4 is the
+                               // default exterior shot and wins whenever Vision sees a
+                               // car but cannot determine the angle precisely.
+                               "car", "automobile", "vehicle", "automotive",
+                               // Front-specific: grille, headlights, hood.
+                               "headlight", "hood", "grille", "windshield", "fender",
+                           ]),
+                SCShotType(id: "rear_three_quarter", displayName: "Rear 3/4",
+                           classificationHints: [
+                               // No generic car hints — avoids tying with front_three_quarter
+                               // on every car image. Wins only when Vision returns rear-specific
+                               // labels (taillights, trunk, exhaust).
+                               "taillight", "tail light", "trunk", "exhaust", "spoiler",
+                               "rear window",
+                           ]),
+                SCShotType(id: "driver_side_profile", displayName: "Driver Side",
+                           classificationHints: [
+                               // No generic car hints. Driver and passenger sides share the
+                               // same feature set — Vision cannot determine left vs right
+                               // from image content alone; the checklist position disambiguates.
+                               "wheel", "tire", "rim", "side mirror", "door", "hubcap",
+                               "profile",
+                           ]),
+                SCShotType(id: "passenger_side_profile", displayName: "Passenger Side",
+                           classificationHints: [
+                               "wheel", "tire", "rim", "side mirror", "door", "hubcap",
+                               "profile",
+                           ]),
+                SCShotType(id: "dashboard", displayName: "Dashboard",
+                           classificationHints: [
+                               "dashboard", "cockpit", "steering", "car interior",
+                               "vehicle interior", "gauge", "speedometer", "instrument",
+                               "windshield", "console", "gear", "display",
+                           ]),
+                SCShotType(id: "interior_seats", displayName: "Interior / Seats",
+                           classificationHints: [
+                               "seat", "interior", "leather", "upholstery", "headrest",
+                               "car interior", "vehicle interior", "door panel", "bench",
+                           ]),
+                SCShotType(id: "engine_bay", displayName: "Engine Bay",
+                           classificationHints: [
+                               "engine", "motor", "machinery", "mechanical", "battery",
+                               "oil", "radiator", "manifold",
+                           ]),
+                SCShotType(id: "trunk", displayName: "Trunk",
+                           classificationHints: [
+                               "trunk", "cargo", "storage", "hatchback", "boot", "luggage",
+                           ]),
             ]
         case .productPhoto:
+            // Product shots are orientation-based and product-agnostic — hints focus on
+            // the studio/presentation context rather than the product itself.
             return [
-                SCShotType(id: "front_view",         displayName: "Front View"),
-                SCShotType(id: "back_view",           displayName: "Back View"),
-                SCShotType(id: "side_view",           displayName: "Side View"),
-                SCShotType(id: "top_view",            displayName: "Top View"),
-                SCShotType(id: "detail",              displayName: "Detail / Close-up"),
+                SCShotType(id: "front_view", displayName: "Front View",
+                           classificationHints: [
+                               "product", "object", "display", "item", "retail", "studio",
+                           ]),
+                SCShotType(id: "back_view", displayName: "Back View",
+                           classificationHints: [
+                               "product", "object", "display", "item", "retail",
+                           ]),
+                SCShotType(id: "side_view", displayName: "Side View",
+                           classificationHints: [
+                               "product", "object", "display", "item",
+                           ]),
+                SCShotType(id: "top_view", displayName: "Top View",
+                           classificationHints: [
+                               "product", "object", "flat lay", "overhead",
+                           ]),
+                SCShotType(id: "detail", displayName: "Detail / Close-up",
+                           classificationHints: [
+                               "texture", "detail", "pattern", "material", "macro", "close",
+                           ]),
                 // Prefixed "product_" to avoid ID collision with foodPhoto's lifestyle shot.
-                SCShotType(id: "product_lifestyle",   displayName: "Lifestyle / In Context"),
+                SCShotType(id: "product_lifestyle", displayName: "Lifestyle / In Context",
+                           classificationHints: [
+                               "lifestyle", "context", "setting", "scene", "environment",
+                               "table", "room",
+                           ]),
             ]
         case .foodPhoto:
             return [
-                SCShotType(id: "hero",               displayName: "Hero Shot"),
-                SCShotType(id: "side_angle",         displayName: "Side Angle"),
-                SCShotType(id: "close_detail",       displayName: "Close Detail"),
-                SCShotType(id: "full_plate",         displayName: "Full Plate"),
+                SCShotType(id: "hero", displayName: "Hero Shot",
+                           classificationHints: [
+                               "food", "dish", "meal", "plate", "cuisine", "restaurant",
+                               "eat", "dining", "delicious", "gourmet", "entree",
+                           ]),
+                SCShotType(id: "side_angle", displayName: "Side Angle",
+                           classificationHints: [
+                               "food", "dish", "meal", "plate", "cuisine", "drink",
+                               "beverage", "glass", "cup",
+                           ]),
+                SCShotType(id: "close_detail", displayName: "Close Detail",
+                           classificationHints: [
+                               "food", "ingredient", "texture", "garnish", "herb",
+                               "spice", "sauce", "macro",
+                           ]),
+                SCShotType(id: "full_plate", displayName: "Full Plate",
+                           classificationHints: [
+                               "plate", "bowl", "dish", "food", "meal", "serving",
+                               "table", "tablecloth",
+                           ]),
                 // Prefixed "food_" to avoid ID collision with productPhoto's lifestyle shot.
-                SCShotType(id: "food_lifestyle",     displayName: "Lifestyle"),
+                SCShotType(id: "food_lifestyle", displayName: "Lifestyle",
+                           classificationHints: [
+                               "restaurant", "cafe", "dining", "table", "setting",
+                               "lifestyle", "background", "ambiance",
+                           ]),
             ]
         }
     }

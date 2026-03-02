@@ -17,6 +17,10 @@ public struct SCCameraGuidanceView: View {
     @Environment(\.scTheme) private var theme
 
     private var onResultHandler: ((SCPhoto) -> Void)?
+    /// When `true` (default) the built-in `FeedbackStack` text pills are rendered.
+    /// Set to `false` via `.hideFeedbackPills()` when you supply your own feedback UI
+    /// (e.g. `SCRuleIconBar`) in an external overlay.
+    private var showFeedbackPills: Bool = true
 
     public init(sdk: ShotCoach) {
         self._sdk = ObservedObject(wrappedValue: sdk)
@@ -53,13 +57,22 @@ public struct SCCameraGuidanceView: View {
         }
     }
 
-    // MARK: - Modifier
+    // MARK: - Modifiers
 
     /// Registers a closure called each time cloud analysis completes for a captured photo.
     /// `photo.cloudResult` may be `nil` if the cloud provider failed or was not configured.
     public func onResult(_ handler: @escaping (SCPhoto) -> Void) -> Self {
         var copy = self
         copy.onResultHandler = handler
+        return copy
+    }
+
+    /// Hides the built-in `FeedbackStack` text pills above the capture button.
+    /// Use when you are rendering your own feedback UI (e.g. `SCRuleIconBar`) in an
+    /// external overlay — the capture button and `ReadyIndicator` are unaffected.
+    public func hideFeedbackPills() -> Self {
+        var copy = self
+        copy.showFeedbackPills = false
         return copy
     }
 
@@ -76,7 +89,9 @@ public struct SCCameraGuidanceView: View {
 
     private var feedbackArea: some View {
         VStack(spacing: 16) {
-            FeedbackStack(result: sdk.frameResult)
+            if showFeedbackPills {
+                FeedbackStack(result: sdk.frameResult)
+            }
             captureButton
         }
     }

@@ -103,11 +103,12 @@ Always read that file before starting a new task — it contains the exact Claud
 ```
 Week:           2
 Phase:          ShotCoachUI + SDK Demo · App Camera Integration
-Last completed: SCShotClassifierRule — VNClassifyImageRequest scene classification
-                sidechained in SCFrameAnalyzer TaskGroup; SCFrameResult.detectedShotType
-                populated from category.requiredShots lookup; SCShotChecklistView shows
-                camera icon + "Detected" badge on matched row; SCRuleResult.detectedShotTypeID
-                added (default nil, backward compatible) — swift build clean, swift test 58/58
+Last completed: Demo app bug fixes — SCBrightnessRule now handles YUV biplanar camera
+                frames (samples Y-plane via CVPixelBufferGetBaseAddressOfPlane, BGRA fallback);
+                SCClutterRule default lowered to 3 salient regions + added total-area coverage
+                check (2+ regions covering >55% of frame); SCResultsView infinite spinner
+                replaced with "Photo saved / add API key" placeholder when cloudResult is nil
+                — swift build clean, swift test 58/58
 Next task:      Plan W2/T04 — App: Camera feature (SCBuiltInCategory.homeListing)
                              → ListingApp repo, not SDK repo
 Branch:         (none — on main)
