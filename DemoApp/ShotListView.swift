@@ -100,6 +100,9 @@ struct ShotListView: View {
                             if SCKeychainService.load(key: "openai_api_key") == nil {
                                 showKeySetup = true
                             } else {
+                                // Set isAnalyzing synchronously before the Task suspends
+                                // to prevent a double-tap from launching two analyses.
+                                isAnalyzing = true
                                 Task { await runBatchAnalysis() }
                             }
                         }
@@ -121,7 +124,10 @@ struct ShotListView: View {
     @MainActor
     private func runBatchAnalysis() async {
         let key = SCKeychainService.load(key: "openai_api_key") ?? ""
-        isAnalyzing = true
+        // isAnalyzing was set synchronously by the caller.
+        // Reset state so a retry after navigating back works correctly.
+        navigateToResults = false
+        cloudResults = [:]
         let provider = SCOpenAIProvider(apiKey: key)
         await withTaskGroup(of: (String, SCCloudResult?).self) { group in
             for entry in entries {
@@ -148,14 +154,20 @@ private struct ShotCell: View {
     let isActive: Bool
     let namespace: Namespace.ID
 
+    // Decoded once via .task(id:) — avoids re-decoding multi-megabyte JPEG on every render.
+#if canImport(UIKit)
+    @State private var cached: UIImage?
+#else
+    @State private var cached: NSImage?
+#endif
+
     var body: some View {
         Color.clear
             .aspectRatio(1, contentMode: .fit)
             .overlay {
                 Group {
-                    if let photo = entry.capturedPhoto {
-                        photoImage(from: photo.imageData)
-                            .scaledToFill()
+                    if entry.capturedPhoto != nil {
+                        cachedPhotoView.scaledToFill()
                     } else {
                         VStack(spacing: 8) {
                             Image(systemName: "camera")
@@ -173,22 +185,26 @@ private struct ShotCell: View {
             .background(Color(white: 0.12))
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .matchedGeometryEffect(id: "photo_\(entry.id)", in: namespace, isSource: !isActive)
+            .task(id: entry.capturedPhoto?.imageData.hashValue) {
+                guard let data = entry.capturedPhoto?.imageData else { return }
+#if canImport(UIKit)
+                cached = UIImage(data: data)
+#else
+                cached = NSImage(data: data)
+#endif
+            }
     }
 
     @ViewBuilder
-    private func photoImage(from data: Data) -> some View {
+    private var cachedPhotoView: some View {
+        if let cached {
 #if canImport(UIKit)
-        if let ui = UIImage(data: data) {
-            Image(uiImage: ui).resizable()
-        } else {
-            Color(white: 0.2)
-        }
+            Image(uiImage: cached).resizable()
 #else
-        if let ns = NSImage(data: data) {
-            Image(nsImage: ns).resizable()
+            Image(nsImage: cached).resizable()
+#endif
         } else {
             Color(white: 0.2)
         }
-#endif
     }
 }

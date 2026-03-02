@@ -12,17 +12,11 @@ struct ShotCoachDemoApp: App {
 
 // MARK: - ContentView
 
-/// Root view. Surfaces `APIKeySetupView` on first launch when no key is stored.
-/// The user can skip key setup — live on-device analysis always runs without a key.
+/// Root view. `CategoryPickerView` owns first-launch key-setup presentation
+/// so there is only one sheet controller for the API key in the hierarchy.
 private struct ContentView: View {
-
-    @State private var showKeySetup = SCKeychainService.load(key: "openai_api_key") == nil
-
     var body: some View {
         CategoryPickerView()
             .preferredColorScheme(.dark)
-            .sheet(isPresented: $showKeySetup) {
-                APIKeySetupView { showKeySetup = false }
-            }
     }
 }

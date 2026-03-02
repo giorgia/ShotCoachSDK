@@ -2,6 +2,18 @@ import SwiftUI
 import ShotCoachCore
 import ShotCoachUI
 
+// MARK: - Helpers
+
+private func scoreColor(_ score: Int) -> Color {
+    switch score {
+    case 80...: return .green
+    case 60..<80: return .orange
+    default: return .red
+    }
+}
+
+// MARK: - SessionResultsView
+
 /// Post-analysis results screen shown after "Send to AI" batch analysis completes.
 ///
 /// Header shows the average quality score across all shots (or a "no analysis" state
@@ -25,12 +37,13 @@ struct SessionResultsView: View {
 
                 // Shot rows.
                 LazyVStack(spacing: 0) {
-                    ForEach(entries) { entry in
+                    ForEach(entries.indices, id: \.self) { i in
+                        let entry = entries[i]
                         ResultRow(entry: entry, cloudResult: cloudResults[entry.id])
                             .contentShape(Rectangle())
                             .onTapGesture { selectedEntry = entry }
 
-                        if entry.id != entries.last?.id {
+                        if i < entries.count - 1 {
                             Divider()
                                 .padding(.leading, 88)
                         }
@@ -44,11 +57,16 @@ struct SessionResultsView: View {
         .navigationTitle("Results")
         .background(Color(white: 0.05).ignoresSafeArea())
         .sheet(item: $selectedEntry) { entry in
-            SCResultsView(photo: SCPhoto(
-                imageData: entry.capturedPhoto!.imageData,
-                frameResult: entry.capturedPhoto!.frameResult,
-                cloudResult: cloudResults[entry.id]
-            ))
+            // capturedPhoto is guaranteed non-nil by the time SessionResultsView is
+            // presented (ShotListView only navigates when all slots are filled).
+            // Guard defensively to avoid a crash if used in isolation (e.g. Previews).
+            if let photo = entry.capturedPhoto {
+                SCResultsView(photo: SCPhoto(
+                    imageData: photo.imageData,
+                    frameResult: photo.frameResult,
+                    cloudResult: cloudResults[entry.id]
+                ))
+            }
         }
     }
 
@@ -64,6 +82,12 @@ struct SessionResultsView: View {
                 Text("Average Score")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+                // Surface partial scoring so the average isn't silently misleading.
+                if cloudResults.count < entries.count {
+                    Text("\(cloudResults.count) of \(entries.count) shots scored")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
             }
         } else {
             VStack(spacing: 10) {
@@ -83,15 +107,9 @@ struct SessionResultsView: View {
     private var averageScore: Int? {
         guard !cloudResults.isEmpty else { return nil }
         let total = cloudResults.values.reduce(0) { $0 + $1.score }
-        return total / cloudResults.count
-    }
-
-    private func scoreColor(_ score: Int) -> Color {
-        switch score {
-        case 80...: return .green
-        case 60..<80: return .orange
-        default: return .red
-        }
+        // Use Double division and round to avoid integer truncation bias
+        // (e.g. 79.5 should round to 80/green, not truncate to 79/orange).
+        return Int((Double(total) / Double(cloudResults.count)).rounded())
     }
 }
 
@@ -103,7 +121,7 @@ private struct ResultRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // Thumbnail
+            // Thumbnail — decoded once via ThumbnailView, not on every render.
             thumbnailView
                 .frame(width: 64, height: 64)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
@@ -150,23 +168,7 @@ private struct ResultRow: View {
     @ViewBuilder
     private var thumbnailView: some View {
         if let photo = entry.capturedPhoto {
-#if canImport(UIKit)
-            if let ui = UIImage(data: photo.imageData) {
-                Image(uiImage: ui)
-                    .resizable()
-                    .scaledToFill()
-            } else {
-                Color(white: 0.2)
-            }
-#else
-            if let ns = NSImage(data: photo.imageData) {
-                Image(nsImage: ns)
-                    .resizable()
-                    .scaledToFill()
-            } else {
-                Color(white: 0.2)
-            }
-#endif
+            ThumbnailView(data: photo.imageData)
         } else {
             Color(white: 0.2)
         }
@@ -187,12 +189,39 @@ private struct ResultRow: View {
         case .high:   return 2
         }
     }
+}
 
-    private func scoreColor(_ score: Int) -> Color {
-        switch score {
-        case 80...: return .green
-        case 60..<80: return .orange
-        default: return .red
+// MARK: - ThumbnailView
+
+/// Decodes image data once via `.task(id:)` and caches the result so that
+/// `UIImage(data:)` / `NSImage(data:)` is never called on every view render.
+private struct ThumbnailView: View {
+    let data: Data
+
+#if canImport(UIKit)
+    @State private var image: UIImage?
+#else
+    @State private var image: NSImage?
+#endif
+
+    var body: some View {
+        Group {
+            if let image {
+#if canImport(UIKit)
+                Image(uiImage: image).resizable().scaledToFill()
+#else
+                Image(nsImage: image).resizable().scaledToFill()
+#endif
+            } else {
+                Color(white: 0.2)
+            }
+        }
+        .task(id: data.hashValue) {
+#if canImport(UIKit)
+            image = UIImage(data: data)
+#else
+            image = NSImage(data: data)
+#endif
         }
     }
 }

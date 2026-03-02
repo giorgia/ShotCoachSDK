@@ -78,30 +78,21 @@ struct ShotCameraView: View {
     @ViewBuilder
     private func freezeFrame(photo: SCPhoto) -> some View {
 #if canImport(UIKit)
-        if let ui = UIImage(data: photo.imageData) {
-            Image(uiImage: ui)
-                .resizable()
-                .scaledToFill()
-                .ignoresSafeArea()
-                .matchedGeometryEffect(
-                    id: "photo_\(shot.id)",
-                    in: heroNamespace,
-                    isSource: true
-                )
-        }
+        let base: AnyView = UIImage(data: photo.imageData).map {
+            AnyView(Image(uiImage: $0).resizable().scaledToFill())
+        } ?? AnyView(Color.black)
 #else
-        if let ns = NSImage(data: photo.imageData) {
-            Image(nsImage: ns)
-                .resizable()
-                .scaledToFill()
-                .ignoresSafeArea()
-                .matchedGeometryEffect(
-                    id: "photo_\(shot.id)",
-                    in: heroNamespace,
-                    isSource: true
-                )
-        }
+        let base: AnyView = NSImage(data: photo.imageData).map {
+            AnyView(Image(nsImage: $0).resizable().scaledToFill())
+        } ?? AnyView(Color.black)
 #endif
+        base
+            .ignoresSafeArea()
+            .matchedGeometryEffect(
+                id: "photo_\(shot.id)",
+                in: heroNamespace,
+                isSource: true
+            )
     }
 
     private var cameraChrome: some View {

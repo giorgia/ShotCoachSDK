@@ -74,8 +74,7 @@ struct CategoryPickerView: View {
 
     @State private var activeCategory: CategoryInfo?
     @State private var showKeySetup = false
-
-    @State private var hasAPIKey = SCKeychainService.load(key: "openai_api_key") != nil
+    @State private var hasAPIKey = false   // resolved in onAppear to avoid sync Keychain read at init
 
     private let columns = [
         GridItem(.flexible(), spacing: 14),
@@ -110,6 +109,12 @@ struct CategoryPickerView: View {
         }
         .navigationTitle("ShotCoach")
         .background(Color(white: 0.05).ignoresSafeArea())
+        .onAppear {
+            // Refresh key state and auto-show setup sheet on first launch.
+            // Runs every appear so the toolbar icon stays in sync after updates.
+            hasAPIKey = SCKeychainService.load(key: "openai_api_key") != nil
+            if !hasAPIKey { showKeySetup = true }
+        }
         .toolbar {
             ToolbarItem(placement: .automatic) {
                 Button { showKeySetup = true } label: {
