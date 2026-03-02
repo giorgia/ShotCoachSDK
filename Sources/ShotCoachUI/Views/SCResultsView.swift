@@ -2,7 +2,8 @@ import SwiftUI
 import ShotCoachCore
 
 /// Displays the cloud analysis result for a captured photo: quality score, issues list,
-/// and ranked recommendations. Shows a loading spinner when `photo.cloudResult` is nil.
+/// and ranked recommendations. Shows a "no analysis" placeholder when `photo.cloudResult`
+/// is nil (e.g. no API key configured or cloud call failed).
 public struct SCResultsView: View {
 
     let photo: SCPhoto
@@ -28,11 +29,20 @@ public struct SCResultsView: View {
                 .padding()
             }
         } else {
-            VStack(spacing: 12) {
-                ProgressView()
-                Text("Analyzing…")
+            // cloudResult is nil: either no API key is configured or the cloud call failed.
+            // onResult fires after the cloud task completes, so nil always means "no result"
+            // — never "in progress". Show a static placeholder instead of an infinite spinner.
+            VStack(spacing: 16) {
+                Image(systemName: "photo.badge.checkmark")
+                    .font(.system(size: 48))
+                    .foregroundStyle(.secondary)
+                Text("Photo saved")
+                    .font(.headline)
+                Text("Add an OpenAI API key in Settings to unlock AI scoring and recommendations.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }

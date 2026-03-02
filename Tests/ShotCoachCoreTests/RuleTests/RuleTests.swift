@@ -51,6 +51,30 @@ final class RuleTests: XCTestCase {
         return buf
     }
 
+    /// Creates a 200×200 BGRA pixel buffer filled with random luminance values.
+    /// Every pixel differs from its neighbours — Laplacian is large at every sample point,
+    /// giving edge density ≈ 1.0. Used to exercise the SCClutterRule edge-density path.
+    private func makeNoisyBuffer(width: Int = 200, height: Int = 200) -> CVPixelBuffer {
+        var pb: CVPixelBuffer?
+        let status = CVPixelBufferCreate(kCFAllocatorDefault, width, height,
+                                         kCVPixelFormatType_32BGRA, nil, &pb)
+        precondition(status == kCVReturnSuccess && pb != nil, "CVPixelBufferCreate failed: \(status)")
+        let buf = pb!
+        CVPixelBufferLockBaseAddress(buf, [])
+        defer { CVPixelBufferUnlockBaseAddress(buf, []) }
+        let ptr = CVPixelBufferGetBaseAddress(buf)!.assumingMemoryBound(to: UInt8.self)
+        let bpr = CVPixelBufferGetBytesPerRow(buf)
+        var rng = SystemRandomNumberGenerator()
+        for y in 0..<height {
+            for x in 0..<width {
+                let v   = UInt8.random(in: 0...255, using: &rng)
+                let off = y * bpr + x * 4
+                ptr[off] = v; ptr[off + 1] = v; ptr[off + 2] = v; ptr[off + 3] = 255
+            }
+        }
+        return buf
+    }
+
     private func frame(_ pb: CVPixelBuffer) -> SCFrame {
         SCFrame(timestamp: 0, pixelBuffer: pb)
     }
@@ -140,14 +164,20 @@ final class RuleTests: XCTestCase {
     }
 
     // MARK: - SCClutterRule
-    // NOTE: The fail path (too many salient objects → passed:false) requires real image
-    // content with multiple distinct objects for VNGenerateObjectnessBasedSaliencyImageRequest.
-    // Deferred to integration tests with bundled test images.
 
     func testClutter_uniformFramePasses() async {
-        // Solid frame has no salient objects — should not be flagged as cluttered.
+        // Solid frame has no edges and no salient objects — not cluttered.
         let result = await SCClutterRule().evaluate(frame(makeSolid(r: 128, g: 128, b: 128)))
         XCTAssertTrue(result.passed)
+    }
+
+    func testClutter_noisyFrame_edgeDensityFails() async {
+        // Random-noise pixel values produce maximum Laplacian response at every sample
+        // point — edge density ≈ 1.0, well above the 0.28 threshold. This verifies the
+        // edge-density path catches cluttered frames that saliency groups as one region.
+        let result = await SCClutterRule().evaluate(frame(makeNoisyBuffer()))
+        XCTAssertFalse(result.passed,
+                       "High-noise buffer (maximum edge density) should be flagged as cluttered")
     }
 
     func testClutter_ruleID() {

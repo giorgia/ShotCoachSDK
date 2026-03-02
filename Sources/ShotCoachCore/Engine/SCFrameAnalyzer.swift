@@ -15,14 +15,17 @@ public actor SCFrameAnalyzer {
     public init(rules: [any SCFrameRule] = []) {
         self.rules = rules
         self.requiredShots = []
+        self.classifier = SCShotClassifierRule(requiredShots: [])
     }
 
     /// Convenience initialiser that pulls `onDeviceRules` and `requiredShots`
-    /// from a category config. `requiredShots` is used to resolve
-    /// `SCShotClassifierRule`'s detected ID into a full `SCShotType`.
+    /// from a category config. `requiredShots` (with their `classificationHints`) is
+    /// forwarded to `SCShotClassifierRule` so the classifier can use category-specific
+    /// Vision vocabulary rather than the generic taxonomy map.
     public init(category: any SCCategoryConfig) {
         self.rules = category.onDeviceRules
         self.requiredShots = category.requiredShots
+        self.classifier = SCShotClassifierRule(requiredShots: category.requiredShots)
     }
 
     /// Sets the delegate that receives frame and cloud analysis events.
@@ -54,13 +57,16 @@ public actor SCFrameAnalyzer {
         // The classifier result is sidechained — it does not enter `ruleResults`.
         var ruleResults: [String: SCRuleResult] = [:]
         var classifierShotID: String? = nil
-        let classifier = SCShotClassifierRule()
+        var classifierTopLabel: String? = nil
+        // `classifier` is created once at init with the category's requiredShots so that
+        // hint-based scoring uses the correct vocabulary for the active session.
+        let snapClassifier = classifier
 
         await withTaskGroup(of: (String, SCRuleResult).self) { group in
             // Classifier runs in the same TaskGroup for concurrency but is keyed
             // by a sentinel ID so it can be separated from quality-rule results.
             group.addTask {
-                (SCShotClassifierRule.classifierRuleID, await classifier.evaluate(frame))
+                (SCShotClassifierRule.classifierRuleID, await snapClassifier.evaluate(frame))
             }
             for rule in rules {
                 group.addTask {
@@ -69,8 +75,9 @@ public actor SCFrameAnalyzer {
             }
             for await (id, result) in group {
                 if id == SCShotClassifierRule.classifierRuleID {
-                    // Sidechain: extract shot ID, don't add to ruleResults.
-                    classifierShotID = result.detectedShotTypeID
+                    // Sidechain: extract shot ID and raw top label; don't add to ruleResults.
+                    classifierShotID  = result.detectedShotTypeID
+                    classifierTopLabel = result.message.isEmpty ? nil : result.message
                 } else {
                     // precondition (not assert) so duplicate ruleIDs crash in both
                     // debug and release builds — silent overwrites corrupt analytics data.
@@ -98,7 +105,8 @@ public actor SCFrameAnalyzer {
             overallGuidance: guidance,
             isReadyToCapture: allPassed,
             processingMs: processingMs,
-            detectedShotType: detectedShotType
+            detectedShotType: detectedShotType,
+            topSceneLabel: classifierTopLabel
         )
 
         lastResult = frameResult
@@ -122,6 +130,10 @@ public actor SCFrameAnalyzer {
     /// Used to resolve `SCShotClassifierRule`'s detected ID into a full `SCShotType`.
     /// Empty when initialised via `init(rules:)` — `detectedShotType` will be nil.
     private let requiredShots: [SCShotType]
+
+    /// Shot classifier pre-built with the category's `requiredShots` and their
+    /// `classificationHints` so hint-based scoring is applied on every frame.
+    private let classifier: SCShotClassifierRule
 
     // `weak` on a protocol existential is unsound; store the delegate as a weak AnyObject
     // and re-type on access. SCAnalysisDelegate: AnyObject guarantees this cast succeeds.
