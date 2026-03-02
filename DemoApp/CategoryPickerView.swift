@@ -7,12 +7,16 @@ import ShotCoachUI
 /// Visual identity for one built-in category: icon, description, and camera theme.
 ///
 /// Used by `CategoryPickerView` (cards) and `CameraSessionView` (theme injection).
-struct CategoryInfo: Identifiable {
+struct CategoryInfo: Identifiable, Hashable {
     var id: String { category.categoryID }
     let category: SCBuiltInCategory
     let icon: String        // SF Symbols name
     let blurb: String       // One-line description on the card
     let theme: SCTheme      // Applied to SCCameraGuidanceView
+
+    // Equality and hashing are keyed on the stable category ID.
+    static func == (lhs: CategoryInfo, rhs: CategoryInfo) -> Bool { lhs.id == rhs.id }
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
 
     // The four built-in categories, each with a distinct accent colour.
     static let all: [CategoryInfo] = [
@@ -65,10 +69,9 @@ struct CategoryInfo: Identifiable {
 
 // MARK: - CategoryPickerView
 
-/// 2 × 2 grid of category cards. Tap any card to open the camera for that category.
+/// 2 × 2 grid of category cards. Tap any card to open the shot-grid session for that category.
 struct CategoryPickerView: View {
 
-    @EnvironmentObject private var store: SessionStore
     @State private var activeCategory: CategoryInfo?
     @State private var showKeySetup = false
 
@@ -80,44 +83,50 @@ struct CategoryPickerView: View {
     ]
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                LazyVGrid(columns: columns, spacing: 14) {
-                    ForEach(CategoryInfo.all) { info in
-                        CategoryCard(info: info)
-                            .onTapGesture { activeCategory = info }
-                    }
-                }
-                .padding(20)
-            }
-            .navigationTitle("ShotCoach")
-            .background(Color(white: 0.05).ignoresSafeArea())
-            .toolbar {
-                ToolbarItem(placement: .automatic) {
-                    Button { showKeySetup = true } label: {
-                        Image(systemName: hasAPIKey ? "key.fill" : "key")
-                            .foregroundStyle(hasAPIKey ? Color.green : Color.secondary)
-                    }
-                    .help(hasAPIKey ? "API key configured — tap to update" : "Add OpenAI API key")
-                }
-            }
-            .sheet(isPresented: $showKeySetup, onDismiss: {
-                hasAPIKey = SCKeychainService.load(key: "openai_api_key") != nil
-            }) {
-                APIKeySetupView { showKeySetup = false }
-            }
-        }
-        // Present the camera full-screen when a category is selected.
-        // fullScreenCover is iOS-only; fall back to sheet on macOS (sim / Catalyst).
-#if os(iOS)
-        .fullScreenCover(item: $activeCategory) { info in
-            CameraSessionView(category: info.category, theme: info.theme)
-                .environmentObject(store)
-        }
-#else
+        NavigationStack { gridContent }
+        // navigationDestination(item:) is available iOS 16+ / macOS 14+.
+        // Use it inside the stack on iOS; fall back to sheet on macOS 13 (build/test only).
+#if !os(iOS)
         .sheet(item: $activeCategory) { info in
-            CameraSessionView(category: info.category, theme: info.theme)
-                .environmentObject(store)
+            ShotListView(info: info)
+        }
+#endif
+    }
+
+    // MARK: - Grid content
+
+    /// The scrollable grid with nav title, toolbar, and key-setup sheet.
+    /// `navigationDestination` is conditionally included on iOS.
+    @ViewBuilder
+    private var gridContent: some View {
+        ScrollView {
+            LazyVGrid(columns: columns, spacing: 14) {
+                ForEach(CategoryInfo.all) { info in
+                    CategoryCard(info: info)
+                        .onTapGesture { activeCategory = info }
+                }
+            }
+            .padding(20)
+        }
+        .navigationTitle("ShotCoach")
+        .background(Color(white: 0.05).ignoresSafeArea())
+        .toolbar {
+            ToolbarItem(placement: .automatic) {
+                Button { showKeySetup = true } label: {
+                    Image(systemName: hasAPIKey ? "key.fill" : "key")
+                        .foregroundStyle(hasAPIKey ? Color.green : Color.secondary)
+                }
+                .help(hasAPIKey ? "API key configured — tap to update" : "Add OpenAI API key")
+            }
+        }
+        .sheet(isPresented: $showKeySetup, onDismiss: {
+            hasAPIKey = SCKeychainService.load(key: "openai_api_key") != nil
+        }) {
+            APIKeySetupView { showKeySetup = false }
+        }
+#if os(iOS)
+        .navigationDestination(item: $activeCategory) { info in
+            ShotListView(info: info)
         }
 #endif
     }

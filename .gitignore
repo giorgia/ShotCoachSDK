@@ -1,0 +1,8 @@
+.build/
+*.o
+*.d
+*.dia
+*.swp
+.DS_Store
+xcuserdata/
+*.xcworkspace/xcuserdata/
