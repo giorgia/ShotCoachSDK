@@ -2,8 +2,14 @@ import SwiftUI
 import ShotCoachCore
 
 /// Shows the session's required shots as a checklist.
-/// Shots before `sdk.currentShot` are marked complete; the current and remaining shots are pending.
-/// When `sdk.currentShot` is `nil` all shots are marked complete.
+///
+/// Shots before `sdk.currentShot` are marked complete; the current and remaining
+/// shots are pending. When `sdk.currentShot` is `nil` all shots are marked complete.
+///
+/// When `SCShotClassifierRule` identifies the scene in the current frame with
+/// sufficient confidence, the matching row is highlighted with a camera icon and
+/// a subtle "Detected" badge — useful when the user is shooting out of order or
+/// wants visual confirmation that the SDK recognises the current scene.
 public struct SCShotChecklistView: View {
 
     @ObservedObject private var sdk: ShotCoach
@@ -15,15 +21,37 @@ public struct SCShotChecklistView: View {
 
     public var body: some View {
         List(sdk.category.requiredShots, id: \.id) { shot in
-            let done = completedShotIDs.contains(shot.id)
+            let done     = completedShotIDs.contains(shot.id)
+            let detected = sdk.frameResult.detectedShotType?.id == shot.id && !done
+
             HStack(spacing: 12) {
-                Image(systemName: done ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(done ? theme.accent : Color.secondary)
+                // Icon: checkmark when done, camera when detected, circle otherwise.
+                Image(systemName: done     ? "checkmark.circle.fill"
+                                : detected ? "camera.fill"
+                                           : "circle")
+                    .foregroundStyle(done || detected ? theme.accent : Color.secondary)
+
                 Text(shot.displayName)
                     .foregroundStyle(done ? Color.secondary : Color.primary)
                     .strikethrough(done)
+
+                Spacer()
+
+                // "Detected" badge — appears on the row whose scene the camera
+                // currently recognises (confidence > classifier threshold).
+                if detected {
+                    Text("Detected")
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(theme.accent)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(theme.accent.opacity(0.12))
+                        .clipShape(Capsule())
+                        .transition(.opacity.combined(with: .scale(scale: 0.85)))
+                }
             }
-            .animation(.default, value: done)
+            .animation(.easeInOut(duration: 0.25), value: done)
+            .animation(.easeInOut(duration: 0.25), value: detected)
         }
         .listStyle(.plain)
     }
