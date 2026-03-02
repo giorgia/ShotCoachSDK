@@ -98,11 +98,18 @@ public struct SCShotClassifierRule: SCFrameRule {
 
             for shot in shotsWithHints {
                 // Sum the confidence of every Vision observation that matches any hint.
-                let score: Float = shot.classificationHints.reduce(0) { sum, hint in
-                    let match = results.first {
+                // Each observation is counted at most once per shot — a `Set` of already-
+                // matched identifiers prevents double-counting when multiple hints match
+                // the same hierarchical Vision label (e.g. "kitchen" and "appliance" both
+                // matching "kitchen appliance" with confidence 0.4 would otherwise add 0.8).
+                var counted = Set<String>()
+                var score: Float = 0
+                for hint in shot.classificationHints {
+                    guard let obs = results.first(where: {
                         $0.identifier.lowercased().contains(hint.lowercased())
-                    }
-                    return sum + (match?.confidence ?? 0)
+                    }) else { continue }
+                    guard counted.insert(obs.identifier).inserted else { continue }
+                    score += obs.confidence
                 }
                 if score > bestScore {
                     bestScore = score
