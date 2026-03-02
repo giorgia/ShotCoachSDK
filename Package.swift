@@ -21,12 +21,8 @@ let package = Package(
             dependencies: ["ShotCoachCore"],
             path: "Sources/ShotCoachUI"
         ),
-        .target(
-            name: "ShotCoachDemo",
-            dependencies: ["ShotCoachCore", "ShotCoachUI"],
-            path: "Sources/ShotCoachDemo",
-            exclude: ["INTEGRATION_GUIDE.md", "Info.plist"]  // docs + Xcode app plist
-        ),
+        // ShotCoachDemo is an iOS app — it lives in DemoApp/ (source files + Xcode project).
+        // It is NOT an SPM target. Build it via DemoApp/ShotCoachDemoRunner.xcodeproj.
         .testTarget(
             name: "ShotCoachCoreTests",
             dependencies: ["ShotCoachCore"],

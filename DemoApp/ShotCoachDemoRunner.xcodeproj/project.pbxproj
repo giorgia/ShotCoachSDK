@@ -15,16 +15,22 @@
 		1100000000000000000000A6 /* GalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2100000000000000000000A6 /* GalleryView.swift */; };
 		1100000000000000000000B1 /* ShotCoachCore in Frameworks */ = {isa = PBXBuildFile; productRef = 4100000000000000000000B1 /* ShotCoachCore */; };
 		1100000000000000000000B2 /* ShotCoachUI in Frameworks */ = {isa = PBXBuildFile; productRef = 4100000000000000000000B2 /* ShotCoachUI */; };
+		233D0B2B2F55EE18004E8FCC /* ShotCameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 233D0B292F55EE18004E8FCC /* ShotCameraView.swift */; };
+		233D0B2C2F55EE18004E8FCC /* ShotListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 233D0B2A2F55EE18004E8FCC /* ShotListView.swift */; };
+		233D0B2D2F55EE18004E8FCC /* SessionResultsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 233D0B282F55EE18004E8FCC /* SessionResultsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		2100000000000000000000A1 /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SessionStore.swift; path = ../Sources/ShotCoachDemo/SessionStore.swift; sourceTree = "<group>"; };
-		2100000000000000000000A2 /* ShotCoachDemoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ShotCoachDemoApp.swift; path = ../Sources/ShotCoachDemo/ShotCoachDemoApp.swift; sourceTree = "<group>"; };
-		2100000000000000000000A3 /* APIKeySetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = APIKeySetupView.swift; path = ../Sources/ShotCoachDemo/APIKeySetupView.swift; sourceTree = "<group>"; };
-		2100000000000000000000A4 /* CategoryPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CategoryPickerView.swift; path = ../Sources/ShotCoachDemo/CategoryPickerView.swift; sourceTree = "<group>"; };
-		2100000000000000000000A5 /* CameraSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CameraSessionView.swift; path = ../Sources/ShotCoachDemo/CameraSessionView.swift; sourceTree = "<group>"; };
-		2100000000000000000000A6 /* GalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = GalleryView.swift; path = ../Sources/ShotCoachDemo/GalleryView.swift; sourceTree = "<group>"; };
-		2100000000000000000000C1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = ../Sources/ShotCoachDemo/Info.plist; sourceTree = "<group>"; };
+		2100000000000000000000A1 /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
+		2100000000000000000000A2 /* ShotCoachDemoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotCoachDemoApp.swift; sourceTree = "<group>"; };
+		2100000000000000000000A3 /* APIKeySetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIKeySetupView.swift; sourceTree = "<group>"; };
+		2100000000000000000000A4 /* CategoryPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryPickerView.swift; sourceTree = "<group>"; };
+		2100000000000000000000A5 /* CameraSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSessionView.swift; sourceTree = "<group>"; };
+		2100000000000000000000A6 /* GalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GalleryView.swift; sourceTree = "<group>"; };
+		2100000000000000000000C1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		233D0B282F55EE18004E8FCC /* SessionResultsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionResultsView.swift; sourceTree = "<group>"; };
+		233D0B292F55EE18004E8FCC /* ShotCameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotCameraView.swift; sourceTree = "<group>"; };
+		233D0B2A2F55EE18004E8FCC /* ShotListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotListView.swift; sourceTree = "<group>"; };
 		6100000000000000000000A1 /* ShotCoachDemoRunner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ShotCoachDemoRunner.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -61,6 +67,9 @@
 		9100000000000000000000A0 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				233D0B282F55EE18004E8FCC /* SessionResultsView.swift */,
+				233D0B292F55EE18004E8FCC /* ShotCameraView.swift */,
+				233D0B2A2F55EE18004E8FCC /* ShotListView.swift */,
 				2100000000000000000000A1 /* SessionStore.swift */,
 				2100000000000000000000A2 /* ShotCoachDemoApp.swift */,
 				2100000000000000000000A3 /* APIKeySetupView.swift */,
@@ -150,6 +159,9 @@
 				1100000000000000000000A2 /* ShotCoachDemoApp.swift in Sources */,
 				1100000000000000000000A3 /* APIKeySetupView.swift in Sources */,
 				1100000000000000000000A4 /* CategoryPickerView.swift in Sources */,
+				233D0B2B2F55EE18004E8FCC /* ShotCameraView.swift in Sources */,
+				233D0B2C2F55EE18004E8FCC /* ShotListView.swift in Sources */,
+				233D0B2D2F55EE18004E8FCC /* SessionResultsView.swift in Sources */,
 				1100000000000000000000A5 /* CameraSessionView.swift in Sources */,
 				1100000000000000000000A6 /* GalleryView.swift in Sources */,
 			);
@@ -273,8 +285,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = WN6G7U99K4;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = ../Sources/ShotCoachDemo/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				INFOPLIST_FILE = Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -297,8 +309,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = WN6G7U99K4;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = ../Sources/ShotCoachDemo/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				INFOPLIST_FILE = Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

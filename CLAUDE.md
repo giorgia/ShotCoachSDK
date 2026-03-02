@@ -103,12 +103,14 @@ Always read that file before starting a new task — it contains the exact Claud
 ```
 Week:           2
 Phase:          ShotCoachUI + SDK Demo · App Camera Integration
-Last completed: Demo app bug fixes — SCBrightnessRule now handles YUV biplanar camera
-                frames (samples Y-plane via CVPixelBufferGetBaseAddressOfPlane, BGRA fallback);
-                SCClutterRule default lowered to 3 salient regions + added total-area coverage
-                check (2+ regions covering >55% of frame); SCResultsView infinite spinner
-                replaced with "Photo saved / add API key" placeholder when cloudResult is nil
-                — swift build clean, swift test 58/58
+Last completed: PR #8 merged — SCRuleIconBar (colour-coded icon overlay replacing
+                FeedbackStack text pills); SCCameraGuidanceView.hideFeedbackPills();
+                SCShotClassifierRule cumulative hint scoring with double-counting fix
+                (Set deduplication per shot); SCBuiltInCategory car exterior shots
+                disambiguated (generic hints on front_three_quarter only); SCBrightnessRule
+                YUV biplanar fix; SCClutterRule edge-density check (Laplacian, threshold 28%);
+                SCResultsView static placeholder when cloudResult nil
+                — swift build clean, swift test 59/59
 Next task:      Plan W2/T04 — App: Camera feature (SCBuiltInCategory.homeListing)
                              → ListingApp repo, not SDK repo
 Branch:         (none — on main)
