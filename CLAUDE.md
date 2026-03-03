@@ -6,10 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 swift build          # Build all targets
-swift test           # Run tests (macOS only, no simulator needed)
+swift test           # Run tests (no simulator needed — runs on your Mac)
 ```
 
-ShotCoachCore has no UI dependencies — all tests run on macOS with `swift test` without launching Xcode or a simulator.
+ShotCoachCore has no UI dependencies — all tests run via `swift test` on your Mac without launching Xcode or a simulator. The SDK targets iOS only; macOS is not a supported deployment platform.
 
 ## Package Structure
 
