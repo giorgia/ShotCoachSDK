@@ -6,7 +6,7 @@ import ShotCoachUI
 
 /// Visual identity for one built-in category: icon, description, and camera theme.
 ///
-/// Used by `CategoryPickerView` (cards) and `CameraSessionView` (theme injection).
+/// Used by `CategoryPickerView` (cards) and `ShotCameraView` (theme injection).
 struct CategoryInfo: Identifiable, Hashable {
     var id: String { category.categoryID }
     let category: SCBuiltInCategory
