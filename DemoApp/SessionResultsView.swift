@@ -194,34 +194,22 @@ private struct ResultRow: View {
 // MARK: - ThumbnailView
 
 /// Decodes image data once via `.task(id:)` and caches the result so that
-/// `UIImage(data:)` / `NSImage(data:)` is never called on every view render.
+/// `UIImage(data:)` is never called on every view render.
 private struct ThumbnailView: View {
     let data: Data
 
-#if canImport(UIKit)
     @State private var image: UIImage?
-#else
-    @State private var image: NSImage?
-#endif
 
     var body: some View {
         Group {
             if let image {
-#if canImport(UIKit)
                 Image(uiImage: image).resizable().scaledToFill()
-#else
-                Image(nsImage: image).resizable().scaledToFill()
-#endif
             } else {
                 Color(white: 0.2)
             }
         }
         .task(id: data.hashValue) {
-#if canImport(UIKit)
             image = UIImage(data: data)
-#else
-            image = NSImage(data: data)
-#endif
         }
     }
 }

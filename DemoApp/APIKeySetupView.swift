@@ -45,10 +45,8 @@ struct APIKeySetupView: View {
                     .textFieldStyle(.roundedBorder)
                     .focused($fieldFocused)
                     .autocorrectionDisabled()
-#if os(iOS)
                     .textInputAutocapitalization(.never)
                     .keyboardType(.asciiCapable)
-#endif
 
                 if showError {
                     Label("Key must start with \"sk-\"", systemImage: "exclamationmark.circle.fill")

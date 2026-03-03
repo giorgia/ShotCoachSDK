@@ -29,7 +29,7 @@ cd ShotCoach
 # Build
 swift build
 
-# Test (runs on macOS, no simulator needed)
+# Test (no simulator needed — runs on your Mac dev machine)
 swift test
 
 # ShotCoachCore has zero UI deps — all tests run without Xcode
