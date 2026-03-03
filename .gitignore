@@ -1,8 +1,19 @@
+# Swift / SPM
 .build/
+.swiftpm/
 *.o
 *.d
 *.dia
 *.swp
-.DS_Store
+
+# Xcode
+DerivedData/
 xcuserdata/
 *.xcworkspace/xcuserdata/
+*.xcuserstate
+
+# macOS
+.DS_Store
+
+# Claude Code
+.claude/
