@@ -81,15 +81,9 @@ struct ShotCameraView: View {
 
     @ViewBuilder
     private func freezeFrame(photo: SCPhoto) -> some View {
-#if canImport(UIKit)
         let base: AnyView = UIImage(data: photo.imageData).map {
             AnyView(Image(uiImage: $0).resizable().scaledToFill())
         } ?? AnyView(Color.black)
-#else
-        let base: AnyView = NSImage(data: photo.imageData).map {
-            AnyView(Image(nsImage: $0).resizable().scaledToFill())
-        } ?? AnyView(Color.black)
-#endif
         base
             .ignoresSafeArea()
             .matchedGeometryEffect(

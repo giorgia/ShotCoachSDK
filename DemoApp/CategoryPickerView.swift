@@ -83,19 +83,10 @@ struct CategoryPickerView: View {
 
     var body: some View {
         NavigationStack { gridContent }
-        // navigationDestination(item:) is available iOS 16+ / macOS 14+.
-        // Use it inside the stack on iOS; fall back to sheet on macOS 13 (build/test only).
-#if !os(iOS)
-        .sheet(item: $activeCategory) { info in
-            ShotListView(info: info)
-        }
-#endif
     }
 
     // MARK: - Grid content
 
-    /// The scrollable grid with nav title, toolbar, and key-setup sheet.
-    /// `navigationDestination` is conditionally included on iOS.
     @ViewBuilder
     private var gridContent: some View {
         ScrollView {
@@ -127,11 +118,9 @@ struct CategoryPickerView: View {
         }) {
             APIKeySetupView { showKeySetup = false }
         }
-#if os(iOS)
         .navigationDestination(item: $activeCategory) { info in
             ShotListView(info: info)
         }
-#endif
     }
 }
 

@@ -93,7 +93,7 @@ public final class SCCameraSession: NSObject {
     /// Current flash mode applied when `capturePhoto()` is called. Defaults to `.auto`.
     public var flashMode: SCFlashMode = .auto
 
-    /// Maximum optical zoom factor available on this device (capped at 10×). Always 1.0 on macOS.
+    /// Maximum optical zoom factor available on this device (capped at 10×).
     public var maxZoomFactor: CGFloat {
 #if os(iOS)
         min(captureDevice?.maxAvailableVideoZoomFactor ?? 1.0, 10.0)
@@ -102,7 +102,7 @@ public final class SCCameraSession: NSObject {
 #endif
     }
 
-    /// Sets the camera zoom factor. Clamped to `1.0...maxZoomFactor`. No-op on macOS.
+    /// Sets the camera zoom factor. Clamped to `1.0...maxZoomFactor`.
     public func setZoom(_ factor: CGFloat) {
 #if os(iOS)
         captureQueue.async { [weak self] in
@@ -118,7 +118,7 @@ public final class SCCameraSession: NSObject {
 
     /// Moves autofocus and autoexposure to a device-space point (origin top-left, range 0–1).
     /// Convert a tap point via `AVCaptureVideoPreviewLayer.captureDevicePointConverted` before
-    /// calling this method. No-op on macOS or when the device does not support point-of-interest.
+    /// calling this method. No-op when the device does not support point-of-interest.
     public func setFocusPoint(_ devicePoint: CGPoint) {
 #if os(iOS)
         captureQueue.async { [weak self] in
@@ -159,13 +159,10 @@ public final class SCCameraSession: NSObject {
         session.beginConfiguration()
         defer { session.commitConfiguration() }
 
-        // Camera input — prefer the back wide-angle camera on iOS; fall back to
-        // the system default on macOS (which has no back/front distinction).
-        let device: AVCaptureDevice?
 #if os(iOS)
-        device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
+        let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
 #else
-        device = AVCaptureDevice.default(for: .video)
+        let device = AVCaptureDevice.default(for: .video)
 #endif
 
         guard let device,

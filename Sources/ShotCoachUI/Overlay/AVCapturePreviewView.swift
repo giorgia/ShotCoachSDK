@@ -1,11 +1,10 @@
 import SwiftUI
 import AVFoundation
 
-/// Internal `UIViewRepresentable` that renders an `AVCaptureSession` preview layer.
-/// On macOS (where there is no `UIViewRepresentable`) this renders an opaque black rectangle.
 #if canImport(UIKit)
 import UIKit
 
+/// Internal `UIViewRepresentable` that renders an `AVCaptureSession` preview layer.
 struct AVCapturePreviewView: UIViewRepresentable {
 
     let session: AVCaptureSession
@@ -53,14 +52,4 @@ struct AVCapturePreviewView: UIViewRepresentable {
         var previewLayer: AVCaptureVideoPreviewLayer { layer as! AVCaptureVideoPreviewLayer }
     }
 }
-
-#else
-
-// MARK: - macOS stub (swift build / swift test compatibility)
-
-struct AVCapturePreviewView: View {
-    let session: AVCaptureSession
-    var body: some View { Color.black }
-}
-
 #endif

@@ -1,8 +1,6 @@
 import SwiftUI
 import ShotCoachCore
-#if canImport(PhotosUI)
 import PhotosUI
-#endif
 
 /// Main camera guidance view — camera preview + real-time feedback overlay + capture button.
 ///
@@ -37,9 +35,7 @@ public struct SCCameraGuidanceView: View {
     /// by `delta` to avoid exponential runaway.
     @State private var zoomAtGestureStart: CGFloat = 1.0
     @State private var focusDismissTask:   Task<Void, Never>? = nil
-#if canImport(PhotosUI)
     @State private var pickerItem: PhotosPickerItem? = nil
-#endif
 
     public init(sdk: ShotCoach) {
         self._sdk = ObservedObject(wrappedValue: sdk)
@@ -171,15 +167,12 @@ public struct SCCameraGuidanceView: View {
                     }
             )
         }
-#else
-        Color.black
 #endif
     }
 
     /// Flash cycle button — sits at the right end of the capture row, balancing `libraryButton`.
     @ViewBuilder
     private var flashButton: some View {
-#if os(iOS)
         if showFlashButton {
             Button { sdk.cycleFlash() } label: {
                 Image(systemName: sdk.flashMode.symbolName)
@@ -192,9 +185,6 @@ public struct SCCameraGuidanceView: View {
         } else {
             Color.clear.frame(width: 44, height: 44)
         }
-#else
-        Color.clear.frame(width: 44, height: 44)
-#endif
     }
 
     private var feedbackArea: some View {
@@ -244,7 +234,6 @@ public struct SCCameraGuidanceView: View {
 
     @ViewBuilder
     private var libraryButton: some View {
-#if canImport(PhotosUI) && os(iOS)
         if showLibraryButton {
             PhotosPicker(selection: $pickerItem, matching: .images) {
                 Image(systemName: "photo.on.rectangle")
@@ -265,8 +254,5 @@ public struct SCCameraGuidanceView: View {
         } else {
             Color.clear.frame(width: 44, height: 44)
         }
-#else
-        Color.clear.frame(width: 44, height: 44)
-#endif
     }
 }

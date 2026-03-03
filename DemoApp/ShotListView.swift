@@ -11,11 +11,7 @@ struct ShotEntry: Identifiable {
     var capturedPhoto: SCPhoto?
     /// Pre-decoded image, populated off the main thread before the hero animation starts
     /// so `ShotCell` has a ready-to-render image on the first animation frame.
-#if canImport(UIKit)
     var cachedImage: UIImage?
-#else
-    var cachedImage: NSImage?
-#endif
 }
 
 // MARK: - ShotListView
@@ -82,11 +78,7 @@ struct ShotListView: View {
                         // the first animation frame — avoids the gray-box flash.
                         Task { @MainActor in
                             let img = await Task.detached(priority: .userInitiated) {
-#if canImport(UIKit)
                                 UIImage(data: photo.imageData)
-#else
-                                NSImage(data: photo.imageData)
-#endif
                             }.value
                             withAnimation(.spring(response: 0.55, dampingFraction: 0.85)) {
                                 entries[entryIdx].capturedPhoto = photo
@@ -178,8 +170,8 @@ private struct ShotCell: View {
             .aspectRatio(1, contentMode: .fit)
             .overlay {
                 Group {
-                    if entry.cachedImage != nil {
-                        cachedPhotoView.scaledToFill()
+                    if let img = entry.cachedImage {
+                        Image(uiImage: img).resizable().scaledToFill()
                     } else {
                         VStack(spacing: 8) {
                             Image(systemName: "camera")
@@ -197,18 +189,5 @@ private struct ShotCell: View {
             .background(Color(white: 0.12))
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .matchedGeometryEffect(id: "photo_\(entry.id)", in: namespace, isSource: !isActive)
-    }
-
-    @ViewBuilder
-    private var cachedPhotoView: some View {
-#if canImport(UIKit)
-        if let img = entry.cachedImage {
-            Image(uiImage: img).resizable()
-        }
-#else
-        if let img = entry.cachedImage {
-            Image(nsImage: img).resizable()
-        }
-#endif
     }
 }
