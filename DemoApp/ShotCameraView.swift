@@ -62,6 +62,9 @@ struct ShotCameraView: View {
                         capturedImage = photo
                         Task {
                             try? await Task.sleep(for: .milliseconds(150))
+                            // Guard against the user dismissing during the freeze-frame
+                            // window — if capturedImage was cleared, don't propagate.
+                            guard capturedImage != nil else { return }
                             onCapture(photo)
                         }
                     }

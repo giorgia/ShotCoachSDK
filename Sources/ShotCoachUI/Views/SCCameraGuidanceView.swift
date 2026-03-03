@@ -36,6 +36,7 @@ public struct SCCameraGuidanceView: View {
     /// so we must multiply this baseline — not the continuously-updating `sdk.zoomFactor` —
     /// by `delta` to avoid exponential runaway.
     @State private var zoomAtGestureStart: CGFloat = 1.0
+    @State private var focusDismissTask:   Task<Void, Never>? = nil
 #if canImport(PhotosUI)
     @State private var pickerItem: PhotosPickerItem? = nil
 #endif
@@ -67,7 +68,11 @@ public struct SCCameraGuidanceView: View {
             ReadyIndicator(isReady: sdk.frameResult.isReadyToCapture)
         }
         .onAppear   { sdk.start() }
-        .onDisappear { sdk.stop() }
+        .onDisappear {
+            sdk.stop()
+            focusDismissTask?.cancel()
+            zoomLabelTask?.cancel()
+        }
         .onChange(of: sdk.photos.count) { newCount in
             guard newCount > 0 else { return }
             onResultHandler?(sdk.photos[newCount - 1])
@@ -119,8 +124,10 @@ public struct SCCameraGuidanceView: View {
                     // devicePoint drives AVFoundation focus (separate concern).
                     withAnimation(.easeOut(duration: 0.15)) { focusPoint = layerPoint }
                     sdk.setFocusPoint(devicePoint)
-                    Task {
+                    focusDismissTask?.cancel()
+                    focusDismissTask = Task {
                         try? await Task.sleep(for: .milliseconds(900))
+                        guard !Task.isCancelled else { return }
                         withAnimation(.easeOut(duration: 0.25)) { focusPoint = nil }
                     }
                 }

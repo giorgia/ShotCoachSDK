@@ -104,9 +104,10 @@ public final class ShotCoach: ObservableObject {
 
     /// Cycles flash mode: off → auto → on → off.
     public func cycleFlash() {
-        let all  = SCFlashMode.allCases
-        let next = all[(all.firstIndex(of: flashMode)! + 1) % all.count]
-        flashMode          = next
+        let all = SCFlashMode.allCases
+        guard let idx = all.firstIndex(of: flashMode) else { return }
+        let next = all[(idx + 1) % all.count]
+        flashMode               = next
         cameraSession.flashMode = next
     }
 

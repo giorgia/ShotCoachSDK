@@ -103,16 +103,14 @@ Always read that file before starting a new task — it contains the exact Claud
 ```
 Week:           2
 Phase:          ShotCoachUI + SDK Demo · App Camera Integration
-Last completed: PR #8 merged — SCRuleIconBar (colour-coded icon overlay replacing
-                FeedbackStack text pills); SCCameraGuidanceView.hideFeedbackPills();
-                SCShotClassifierRule cumulative hint scoring with double-counting fix
-                (Set deduplication per shot); SCBuiltInCategory car exterior shots
-                disambiguated (generic hints on front_three_quarter only); SCBrightnessRule
-                YUV biplanar fix; SCClutterRule edge-density check (Laplacian, threshold 28%);
-                SCResultsView static placeholder when cloudResult nil
+Last completed: PR #9 merged — ShotCoachDemo shot-grid-first UX redesign
+                (ShotListView hero grid, ShotCameraView overlay, SessionResultsView,
+                batch withTaskGroup cloud analysis, demo sources moved to DemoApp/,
+                .gitignore added, dark mode + nav button fixes, full code review fixes:
+                force-unwrap guard, double-tap race, stale hasAPIKey, duplicate sheets,
+                integer division rounding, ThumbnailView cached decode, partial score notice)
                 — swift build clean, swift test 59/59
-Next task:      Plan W2/T04 — App: Camera feature (SCBuiltInCategory.homeListing)
-                             → ListingApp repo, not SDK repo
+Next task:      W2/T06 — check master plan
 Branch:         (none — on main)
 Last tag:       (none)
 ```

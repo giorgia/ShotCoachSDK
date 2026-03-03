@@ -105,12 +105,14 @@ public final class SCCameraSession: NSObject {
     /// Sets the camera zoom factor. Clamped to `1.0...maxZoomFactor`. No-op on macOS.
     public func setZoom(_ factor: CGFloat) {
 #if os(iOS)
-        guard let device = captureDevice else { return }
-        let upper   = min(device.maxAvailableVideoZoomFactor, 10.0)
-        let clamped = max(1.0, min(upper, factor))
-        try? device.lockForConfiguration()
-        device.videoZoomFactor = clamped
-        device.unlockForConfiguration()
+        captureQueue.async { [weak self] in
+            guard let device = self?.captureDevice else { return }
+            let upper   = min(device.maxAvailableVideoZoomFactor, 10.0)
+            let clamped = max(1.0, min(upper, factor))
+            try? device.lockForConfiguration()
+            device.videoZoomFactor = clamped
+            device.unlockForConfiguration()
+        }
 #endif
     }
 
@@ -119,15 +121,17 @@ public final class SCCameraSession: NSObject {
     /// calling this method. No-op on macOS or when the device does not support point-of-interest.
     public func setFocusPoint(_ devicePoint: CGPoint) {
 #if os(iOS)
-        guard let device = captureDevice,
-              device.isFocusPointOfInterestSupported,
-              device.isExposurePointOfInterestSupported else { return }
-        try? device.lockForConfiguration()
-        device.focusPointOfInterest    = devicePoint
-        device.focusMode               = .autoFocus
-        device.exposurePointOfInterest = devicePoint
-        device.exposureMode            = .autoExpose
-        device.unlockForConfiguration()
+        captureQueue.async { [weak self] in
+            guard let device = self?.captureDevice,
+                  device.isFocusPointOfInterestSupported,
+                  device.isExposurePointOfInterestSupported else { return }
+            try? device.lockForConfiguration()
+            device.focusPointOfInterest    = devicePoint
+            device.focusMode               = .autoFocus
+            device.exposurePointOfInterest = devicePoint
+            device.exposureMode            = .autoExpose
+            device.unlockForConfiguration()
+        }
 #endif
     }
 
