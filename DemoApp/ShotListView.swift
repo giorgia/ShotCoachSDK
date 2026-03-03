@@ -9,6 +9,13 @@ struct ShotEntry: Identifiable {
     let id: String          // == shot.id
     let shot: SCShotType
     var capturedPhoto: SCPhoto?
+    /// Pre-decoded image, populated off the main thread before the hero animation starts
+    /// so `ShotCell` has a ready-to-render image on the first animation frame.
+#if canImport(UIKit)
+    var cachedImage: UIImage?
+#else
+    var cachedImage: NSImage?
+#endif
 }
 
 // MARK: - ShotListView
@@ -71,9 +78,21 @@ struct ShotListView: View {
                     shot: entries[entryIdx].shot,
                     heroNamespace: heroNamespace,
                     onCapture: { photo in
-                        withAnimation(.spring(response: 0.55, dampingFraction: 0.85)) {
-                            entries[entryIdx].capturedPhoto = photo
-                            activeShotID = nil
+                        // Decode the JPEG off the main thread so the image is ready on
+                        // the first animation frame — avoids the gray-box flash.
+                        Task { @MainActor in
+                            let img = await Task.detached(priority: .userInitiated) {
+#if canImport(UIKit)
+                                UIImage(data: photo.imageData)
+#else
+                                NSImage(data: photo.imageData)
+#endif
+                            }.value
+                            withAnimation(.spring(response: 0.55, dampingFraction: 0.85)) {
+                                entries[entryIdx].capturedPhoto = photo
+                                entries[entryIdx].cachedImage   = img
+                                activeShotID = nil
+                            }
                         }
                     },
                     onDismiss: {
@@ -154,19 +173,12 @@ private struct ShotCell: View {
     let isActive: Bool
     let namespace: Namespace.ID
 
-    // Decoded once via .task(id:) — avoids re-decoding multi-megabyte JPEG on every render.
-#if canImport(UIKit)
-    @State private var cached: UIImage?
-#else
-    @State private var cached: NSImage?
-#endif
-
     var body: some View {
         Color.clear
             .aspectRatio(1, contentMode: .fit)
             .overlay {
                 Group {
-                    if entry.capturedPhoto != nil {
+                    if entry.cachedImage != nil {
                         cachedPhotoView.scaledToFill()
                     } else {
                         VStack(spacing: 8) {
@@ -185,26 +197,18 @@ private struct ShotCell: View {
             .background(Color(white: 0.12))
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .matchedGeometryEffect(id: "photo_\(entry.id)", in: namespace, isSource: !isActive)
-            .task(id: entry.capturedPhoto?.imageData.hashValue) {
-                guard let data = entry.capturedPhoto?.imageData else { return }
-#if canImport(UIKit)
-                cached = UIImage(data: data)
-#else
-                cached = NSImage(data: data)
-#endif
-            }
     }
 
     @ViewBuilder
     private var cachedPhotoView: some View {
-        if let cached {
 #if canImport(UIKit)
-            Image(uiImage: cached).resizable()
-#else
-            Image(nsImage: cached).resizable()
-#endif
-        } else {
-            Color(white: 0.2)
+        if let img = entry.cachedImage {
+            Image(uiImage: img).resizable()
         }
+#else
+        if let img = entry.cachedImage {
+            Image(nsImage: img).resizable()
+        }
+#endif
     }
 }

@@ -88,6 +88,53 @@ public final class SCCameraSession: NSObject {
         return photo
     }
 
+    // MARK: - Public — camera controls
+
+    /// Current flash mode applied when `capturePhoto()` is called. Defaults to `.auto`.
+    public var flashMode: SCFlashMode = .auto
+
+    /// Maximum optical zoom factor available on this device (capped at 10×). Always 1.0 on macOS.
+    public var maxZoomFactor: CGFloat {
+#if os(iOS)
+        min(captureDevice?.maxAvailableVideoZoomFactor ?? 1.0, 10.0)
+#else
+        1.0
+#endif
+    }
+
+    /// Sets the camera zoom factor. Clamped to `1.0...maxZoomFactor`. No-op on macOS.
+    public func setZoom(_ factor: CGFloat) {
+#if os(iOS)
+        captureQueue.async { [weak self] in
+            guard let device = self?.captureDevice else { return }
+            let upper   = min(device.maxAvailableVideoZoomFactor, 10.0)
+            let clamped = max(1.0, min(upper, factor))
+            try? device.lockForConfiguration()
+            device.videoZoomFactor = clamped
+            device.unlockForConfiguration()
+        }
+#endif
+    }
+
+    /// Moves autofocus and autoexposure to a device-space point (origin top-left, range 0–1).
+    /// Convert a tap point via `AVCaptureVideoPreviewLayer.captureDevicePointConverted` before
+    /// calling this method. No-op on macOS or when the device does not support point-of-interest.
+    public func setFocusPoint(_ devicePoint: CGPoint) {
+#if os(iOS)
+        captureQueue.async { [weak self] in
+            guard let device = self?.captureDevice,
+                  device.isFocusPointOfInterestSupported,
+                  device.isExposurePointOfInterestSupported else { return }
+            try? device.lockForConfiguration()
+            device.focusPointOfInterest    = devicePoint
+            device.focusMode               = .autoFocus
+            device.exposurePointOfInterest = devicePoint
+            device.exposureMode            = .autoExpose
+            device.unlockForConfiguration()
+        }
+#endif
+    }
+
     // MARK: - Private — session setup
 
     private let session      = AVCaptureSession()
@@ -98,6 +145,9 @@ public final class SCCameraSession: NSObject {
     private let analyzer:      SCFrameAnalyzer
     private let cloudProvider: any SCCloudProvider
     private let category:      any SCCategoryConfig
+
+    /// Retained so zoom/focus/flash calls can configure the device after setup.
+    private var captureDevice: AVCaptureDevice?
 
     // AnyObject box for weak delegate (direct `weak var: any Protocol` is unsound).
     private weak var _delegateObject: AnyObject?
@@ -122,6 +172,7 @@ public final class SCCameraSession: NSObject {
               let input = try? AVCaptureDeviceInput(device: device),
               session.canAddInput(input)
         else { return }
+        captureDevice = device
         session.addInput(input)
 
         // Video output — feeds pixel buffers to SCFrameAnalyzer.
@@ -142,12 +193,16 @@ public final class SCCameraSession: NSObject {
                 continuation.resume(throwing: SCCloudError.invalidResponse)
                 return
             }
-            let handler = PhotoCaptureHandler(continuation: continuation)
+            let handler  = PhotoCaptureHandler(continuation: continuation)
             self.photoHandler = handler   // Retain for duration of AVFoundation callback.
-            self.photoOutput.capturePhoto(
-                with: AVCapturePhotoSettings(),
-                delegate: handler
-            )
+            let settings = AVCapturePhotoSettings()
+#if os(iOS)
+            let avFlash = self.flashMode.avFlashMode
+            if self.photoOutput.supportedFlashModes.contains(avFlash) {
+                settings.flashMode = avFlash
+            }
+#endif
+            self.photoOutput.capturePhoto(with: settings, delegate: handler)
         }
     }
 }
@@ -177,6 +232,20 @@ extension SCCameraSession: AVCaptureVideoDataOutputSampleBufferDelegate {
         }
     }
 }
+
+// MARK: - SCFlashMode → AVCaptureDevice.FlashMode
+
+#if os(iOS)
+fileprivate extension SCFlashMode {
+    var avFlashMode: AVCaptureDevice.FlashMode {
+        switch self {
+        case .off:  return .off
+        case .auto: return .auto
+        case .on:   return .on
+        }
+    }
+}
+#endif
 
 // MARK: - PhotoCaptureHandler (private helper)
 

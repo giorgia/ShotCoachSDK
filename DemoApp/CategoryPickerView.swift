@@ -110,10 +110,8 @@ struct CategoryPickerView: View {
         .navigationTitle("ShotCoach")
         .background(Color(white: 0.05).ignoresSafeArea())
         .onAppear {
-            // Refresh key state and auto-show setup sheet on first launch.
-            // Runs every appear so the toolbar icon stays in sync after updates.
+            // Refresh key state so the toolbar icon stays in sync after updates.
             hasAPIKey = SCKeychainService.load(key: "openai_api_key") != nil
-            if !hasAPIKey { showKeySetup = true }
         }
         .toolbar {
             ToolbarItem(placement: .automatic) {

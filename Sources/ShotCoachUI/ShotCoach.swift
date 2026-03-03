@@ -28,6 +28,12 @@ public final class ShotCoach: ObservableObject {
     /// True while a photo capture is in-flight; prevents double-tapping the shutter.
     @Published public private(set) var isCapturing = false
 
+    /// Current zoom factor reflected from the camera device. Updated by `setZoom(_:)`.
+    @Published public private(set) var zoomFactor: CGFloat = 1.0
+
+    /// Current flash mode applied at capture time. Cycled by `cycleFlash()`.
+    @Published public private(set) var flashMode: SCFlashMode = .auto
+
     // MARK: - Public read-only
 
     /// The category driving this session.
@@ -56,9 +62,11 @@ public final class ShotCoach: ObservableObject {
             isReadyToCapture: false,
             processingMs: 0
         )
+        let provider = SCOpenAIProvider(apiKey: apiKey)
+        self.cloudProvider = provider
         self.cameraSession = SCCameraSession(
             category: category,
-            cloudProvider: SCOpenAIProvider(apiKey: apiKey)
+            cloudProvider: provider
         )
         self.cameraSession.delegate = self
     }
@@ -88,8 +96,43 @@ public final class ShotCoach: ObservableObject {
         }
     }
 
+    /// Sets the camera zoom factor. Clamped to `1.0...maxZoomFactor` by `SCCameraSession`.
+    public func setZoom(_ factor: CGFloat) {
+        cameraSession.setZoom(factor)
+        zoomFactor = max(1.0, min(cameraSession.maxZoomFactor, factor))
+    }
+
+    /// Cycles flash mode: off → auto → on → off.
+    public func cycleFlash() {
+        let all = SCFlashMode.allCases
+        guard let idx = all.firstIndex(of: flashMode) else { return }
+        let next = all[(idx + 1) % all.count]
+        flashMode               = next
+        cameraSession.flashMode = next
+    }
+
+    /// Moves camera focus and exposure to a device-space point.
+    /// Convert a tap from view space using `AVCaptureVideoPreviewLayer.captureDevicePointConverted`.
+    public func setFocusPoint(_ devicePoint: CGPoint) {
+        cameraSession.setFocusPoint(devicePoint)
+    }
+
+    /// Analyses a photo from the user's library as though it were captured by the shutter.
+    /// Results arrive via the same `onResult` closure path as a captured photo.
+    public func analyzePhoto(imageData: Data) async {
+        let prompt = currentShot.map { category.cloudPrompt(for: $0) }
+            .flatMap { $0.isEmpty ? nil : $0 }
+            ?? "Analyse this photo for overall quality, composition, and lighting."
+        let photo       = SCPhoto(imageData: imageData, frameResult: nil)
+        let cloudResult = try? await cloudProvider.analyze(photo: photo, prompt: prompt)
+        let enriched    = SCPhoto(imageData: imageData, frameResult: nil, cloudResult: cloudResult)
+        photos.append(enriched)
+        advanceShot()
+    }
+
     // MARK: - Private
 
+    private let cloudProvider: any SCCloudProvider
     private let cameraSession: SCCameraSession
 
     private func advanceShot() {

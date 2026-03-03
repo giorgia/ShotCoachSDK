@@ -57,10 +57,14 @@ struct ShotCameraView: View {
                 // Live camera + chrome.
                 SCCameraGuidanceView(sdk: sdk)
                     .hideFeedbackPills()
+                    .hideZoomControls()
                     .onResult { photo in
                         capturedImage = photo
                         Task {
                             try? await Task.sleep(for: .milliseconds(150))
+                            // Guard against the user dismissing during the freeze-frame
+                            // window — if capturedImage was cleared, don't propagate.
+                            guard capturedImage != nil else { return }
                             onCapture(photo)
                         }
                     }
@@ -96,38 +100,54 @@ struct ShotCameraView: View {
     }
 
     private var cameraChrome: some View {
-        VStack {
-            HStack(alignment: .top) {
-                // Dismiss — top-left
-                Button(action: onDismiss) {
-                    Image(systemName: "xmark")
-                        .font(.body.weight(.semibold))
-                        .padding(10)
-                        .background(.ultraThinMaterial)
-                        .clipShape(Circle())
-                        .foregroundStyle(.white)
+        ZStack {
+            // Icon bar — GeometryReader with .ignoresSafeArea() gives geo.size = full
+            // screen so barH matches the letterbox bars drawn in SCCameraGuidanceView.
+            // barH = height of each dark letterbox strip.
+            // Icon bar height ≈ 55 pt (6 pt v-pad × 2 + 20 pt icon + 4 spacing + 9 pt label + 4 cell-pad).
+            // bottomPad = barH - 70 places the bar's top edge at the 4:3 photo boundary,
+            // with its bottom just above the 60 pt capture row.
+            GeometryReader { geo in
+                let barH      = max(0.0, (geo.size.height - geo.size.width * 4.0 / 3.0) / 2)
+                let bottomPad = max(8.0, barH - 70)
+                VStack {
+                    Spacer()
+                    SCRuleIconBar(result: sdk.frameResult, currentShot: sdk.currentShot)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, bottomPad)
                 }
-
-                Spacer()
-
-                // Shot name — top-right
-                Text(shot.displayName)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Capsule())
             }
-            .padding(16)
+            .ignoresSafeArea()
 
-            Spacer()
+            // Top chrome — no .ignoresSafeArea() so SwiftUI positions this VStack
+            // inside the safe area, naturally clearing the Dynamic Island.
+            VStack {
+                HStack(alignment: .top) {
+                    // Dismiss — top-left
+                    Button(action: onDismiss) {
+                        Image(systemName: "xmark")
+                            .font(.body.weight(.semibold))
+                            .padding(10)
+                            .background(.ultraThinMaterial)
+                            .clipShape(Circle())
+                            .foregroundStyle(.white)
+                    }
 
-            // Rule icon bar — above the capture button rendered by SCCameraGuidanceView.
-            // 110 pt inset clears the 74 pt button ring + 16 pt padding + safe area.
-            SCRuleIconBar(result: sdk.frameResult, currentShot: sdk.currentShot)
-                .padding(.horizontal, 16)
-                .padding(.bottom, 110)
+                    Spacer()
+
+                    // Shot name — top-right
+                    Text(shot.displayName)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(.ultraThinMaterial)
+                        .clipShape(Capsule())
+                }
+                .padding(.top, 8)
+                .padding([.horizontal, .bottom], 16)
+                Spacer()
+            }
         }
     }
 }

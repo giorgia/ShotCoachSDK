@@ -18,6 +18,9 @@ public struct SCOpenAIProvider: SCCloudProvider, Sendable {
     // MARK: - SCCloudProvider
 
     public func analyze(photo: SCPhoto, prompt: String) async throws -> SCCloudResult {
+        // Fast-fail before any CPU or network work — avoids a 1-3 s round-trip when
+        // the key is deliberately empty (e.g. ShotCameraView defers cloud to batch).
+        guard !apiKey.isEmpty else { throw SCCloudError.invalidAPIKey }
         let compressed = try compressImage(photo.imageData)
         let base64 = compressed.base64EncodedString()
         let request = try buildRequest(base64Image: base64, prompt: prompt)
