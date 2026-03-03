@@ -44,7 +44,7 @@ public struct SCRuleIconBar: View {
             }
         }
         .padding(.horizontal, 8)
-        .padding(.vertical, 12)
+        .padding(.vertical, 6)
         .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 18))
         // Animate colour changes as the live analysis updates every 1.5 s.
@@ -102,9 +102,9 @@ public struct SCRuleIconBar: View {
 
     @ViewBuilder
     private func iconCell(entry: Entry) -> some View {
-        VStack(spacing: 5) {
+        VStack(spacing: 4) {
             Image(systemName: entry.icon)
-                .font(.system(size: 22, weight: .regular))
+                .font(.system(size: 20, weight: .regular))
                 .foregroundStyle(entry.color)
             Text(entry.label)
                 .font(.system(size: 9, weight: .semibold))
