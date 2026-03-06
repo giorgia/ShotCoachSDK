@@ -7,10 +7,10 @@ import CoreVideo
 ///
 /// | Dimension            | Weight | Signal                                           |
 /// |----------------------|--------|--------------------------------------------------|
-/// | Focal clarity        | 0.30   | Salient-object count + confidence concentration  |
+/// | Focal clarity        | 0.40   | Salient-object count + confidence concentration  |
 /// | Compositional balance| 0.25   | Weighted centroid distance to thirds-intersections |
 /// | Visual variety       | 0.20   | Coefficient of variation across 3×3 heatmap cells |
-/// | Lighting quality     | 0.25   | Direct luminance sampling (Rec.709)              |
+/// | Lighting quality     | 0.15   | Direct luminance sampling (Rec.709)              |
 ///
 /// Unlike `SCClutterRule`, this rule rewards intentional design — a gallery wall
 /// with good lighting and a clear focal subject scores high, not low.
@@ -56,11 +56,13 @@ public struct SCInstagrammabilityRule: SCFrameRule {
         let lightScore   = lightingScore(pixelBuffer: frame.pixelBuffer)
 
         // Weighted composite → [0, 10].
-        // TODO: Tune weights against a labelled dataset.
-        let composite = focalScore   * 0.30
+        // Weights: focal clarity carries more weight (composition matters most for
+        // real-estate instagrammability); lighting is reduced because indoor rooms
+        // almost always fall in an acceptable luma range, making it a near-free score.
+        let composite = focalScore   * 0.40
                       + balanceScore * 0.25
                       + varietyScore * 0.20
-                      + lightScore   * 0.25
+                      + lightScore   * 0.15
         let score = composite * 10.0
 
         let label = scoreLabel(score)
@@ -209,14 +211,15 @@ public struct SCInstagrammabilityRule: SCFrameRule {
 
     // MARK: - Dimension: Lighting quality
 
-    /// Scores 1.0 when average luminance is in [0.25, 0.75]; linear falloff outside.
-    /// Uses the same pixel-sampling approach as `SCBrightnessRule`.
+    /// Scores 1.0 when average luminance is in [0.35, 0.65]; linear falloff outside.
+    /// Narrower than `SCBrightnessRule`'s pass band — rewards well-exposed scenes
+    /// without giving a free pass to any non-dark, non-blown frame.
     private func lightingScore(pixelBuffer: CVPixelBuffer) -> Double {
         let luma = averageLuminance(of: pixelBuffer)
-        if luma >= 0.25, luma <= 0.75 { return 1.0 }
-        if luma < 0.25 { return Double(luma / 0.25) }
-        // luma > 0.75
-        return Double((1.0 - luma) / 0.25)
+        if luma >= 0.35, luma <= 0.65 { return 1.0 }
+        if luma < 0.35 { return Double(luma / 0.35) }
+        // luma > 0.65
+        return Double((1.0 - luma) / 0.35)
     }
 
     private func averageLuminance(of pixelBuffer: CVPixelBuffer) -> Float {

@@ -28,6 +28,7 @@ struct ShotListView: View {
 
     @State private var entries: [ShotEntry]
     @State private var activeShotID: String?
+    @State private var aestheticModel: HomeListingAestheticModel? = try? HomeListingAestheticModel()
     @State private var cloudResults: [String: SCCloudResult] = [:]
     @State private var isAnalyzing = false
     @State private var navigateToResults = false
@@ -58,7 +59,8 @@ struct ShotListView: View {
                         ShotCell(
                             entry: entry,
                             isActive: activeShotID == entry.id,
-                            namespace: heroNamespace
+                            namespace: heroNamespace,
+                            aestheticModel: aestheticModel
                         )
                         .onTapGesture { activeShotID = entry.id }
                     }
@@ -164,6 +166,16 @@ private struct ShotCell: View {
     let entry: ShotEntry
     let isActive: Bool
     let namespace: Namespace.ID
+    let aestheticModel: HomeListingAestheticModel?
+
+    /// Populated asynchronously for camera-roll photos that bypassed live analysis.
+    @State private var asyncScore: Double?
+
+    private var displayScore: Double? {
+        // Live-captured photos: use the EMA score frozen at capture time.
+        // Library photos (frameResult == nil): use the async score once computed.
+        entry.capturedPhoto?.frameResult?.rules["sc.aesthetic"]?.numericScore ?? asyncScore
+    }
 
     var body: some View {
         Color.clear
@@ -188,6 +200,28 @@ private struct ShotCell: View {
             }
             .background(Color(white: 0.12))
             .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(alignment: .topTrailing) {
+                if let score = displayScore {
+                    HStack(spacing: 3) {
+                        Image(systemName: "sparkles").font(.system(size: 9, weight: .semibold))
+                        Text(String(format: "%.1f", score)).font(.caption2.weight(.bold))
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 4)
+                    .background(score >= 8 ? Color.green : score >= 5 ? Color.orange : Color.red)
+                    .clipShape(Capsule())
+                    .padding(6)
+                }
+            }
+            .task(id: entry.capturedPhoto?.imageData.count) {
+                // Only score asynchronously when there is no live frameResult
+                // (i.e. photo came from the library, not the live camera).
+                guard entry.capturedPhoto?.frameResult?.rules["sc.aesthetic"] == nil,
+                      let data = entry.capturedPhoto?.imageData,
+                      let model = aestheticModel else { return }
+                asyncScore = try? await model.score(imageData: data)
+            }
             .matchedGeometryEffect(id: "photo_\(entry.id)", in: namespace, isSource: !isActive)
     }
 }

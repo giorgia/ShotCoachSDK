@@ -61,10 +61,11 @@ final class SCInstagrammabilityRuleTests: XCTestCase {
         // Because this is a synthetic buffer and Vision may fail gracefully,
         // we only assert score ≤ 4.0 or result is the fallback pass.
         if let score = result.numericScore {
-            // Lighting alone contributes 25% of 10 = 2.5 max from light dimension.
-            // With near-zero lighting, composite should be below midpoint.
-            XCTAssertLessThan(score, 6.0,
-                "All-black frame should produce a low instagrammability score")
+            // Lighting weight is now 0.15; max without lighting contribution = 8.5.
+            // Vision may return non-zero saliency for synthetic buffers, so we
+            // assert the score is below 8 (lighting penalty must register).
+            XCTAssertLessThan(score, 8.0,
+                "All-black frame should produce a below-peak instagrammability score")
         } else {
             // Graceful fallback — Vision failed on synthetic buffer.
             XCTAssertTrue(result.passed)

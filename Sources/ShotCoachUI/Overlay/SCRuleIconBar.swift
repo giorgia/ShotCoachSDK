@@ -67,6 +67,7 @@ public struct SCRuleIconBar: View {
         ("sc.brightness",        "sun.max",                              "Light"),
         ("sc.blur",              "camera.aperture",                      "Sharp"),
         ("sc.horizon",           "level",                                "Level"),
+        ("sc.aesthetic",         "sparkles",                             "Vibe"),
         ("sc.instagrammability", "sparkles",                             "Vibe"),
         ("sc.distance",          "arrow.up.left.and.arrow.down.right",   "Distance"),
         ("sc.reflection",        "rays",                                 "Refl."),
@@ -82,7 +83,7 @@ public struct SCRuleIconBar: View {
             let color: Color = r.passed ? .green : (r.severity == .critical ? .red : .orange)
             // Instagrammability rule: show numeric score when available, else fall back to label.
             let label: String
-            if id == "sc.instagrammability", let score = r.numericScore {
+            if (id == "sc.aesthetic" || id == "sc.instagrammability"), let score = r.numericScore {
                 label = String(format: "%.1f", score)
             } else {
                 label = defaultLabel

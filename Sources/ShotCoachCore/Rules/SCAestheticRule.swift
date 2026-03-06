@@ -60,14 +60,22 @@ public actor SCAestheticRule: SCFrameRule {
     // MARK: - SCFrameRule
 
     public func evaluate(_ frame: SCFrame) async -> SCRuleResult {
+        // Heuristic baseline — runs regardless of model availability.
+        let heuristicScore = await SCInstagrammabilityRule().evaluate(frame).numericScore ?? 5.0
+
+        // Blend: 70 % CoreML + 30 % heuristic.
+        // On model throw, fall back to 100 % heuristic so the score stays meaningful.
+        let blended: Double
         do {
             let raw = try await model.score(frame.pixelBuffer)
             let clamped = max(0.0, min(10.0, raw))
-            // EMA: smoothed = α * raw + (1 − α) * smoothed
-            smoothedScore = smoothingFactor * clamped + (1.0 - smoothingFactor) * smoothedScore
+            blended = 0.7 * clamped + 0.3 * heuristicScore
         } catch {
-            // Graceful degradation: keep smoothedScore unchanged, still return a result.
+            blended = heuristicScore
         }
+
+        // EMA: smoothed = α * blended + (1 − α) * smoothed
+        smoothedScore = smoothingFactor * blended + (1.0 - smoothingFactor) * smoothedScore
 
         let score = smoothedScore
         let label = scoreLabel(score)

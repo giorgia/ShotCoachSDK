@@ -86,14 +86,15 @@ final class SCAestheticRuleTests: XCTestCase {
 
     // MARK: - Graceful degradation
 
-    func test_modelThrow_returnsLastSmoothedScore() async {
-        // ThrowingAestheticModel always throws. The rule should return the
-        // neutral initial smoothedScore of 5.0.
+    func test_modelThrow_fallsBackToHeuristic() async {
+        // ThrowingAestheticModel always throws. The rule falls back to the
+        // instagrammability heuristic, so the score is allowed to drift from 5.0.
+        // We verify a valid score in [0, 10] is still returned (no crash, no nil).
         let rule = SCAestheticRule(model: ThrowingAestheticModel())
         let result = await rule.evaluate(makeFrame())
         let score = try! XCTUnwrap(result.numericScore)
-        XCTAssertEqual(score, 5.0, accuracy: 0.001,
-                       "On throw, rule should return unchanged smoothedScore (5.0 default)")
+        XCTAssertGreaterThanOrEqual(score, 0.0)
+        XCTAssertLessThanOrEqual(score, 10.0)
     }
 
     // MARK: - numericScore presence
