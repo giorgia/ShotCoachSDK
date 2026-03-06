@@ -64,12 +64,12 @@ public struct SCRuleIconBar: View {
 
     /// Fixed display order for quality rules. Only rules present in `result.rules` appear.
     private static let ruleVisuals: [(id: String, icon: String, label: String)] = [
-        ("sc.brightness", "sun.max",                              "Light"),
-        ("sc.blur",       "camera.aperture",                      "Sharp"),
-        ("sc.horizon",    "level",                                "Level"),
-        ("sc.clutter",    "square.on.square",                     "Clutter"),
-        ("sc.distance",   "arrow.up.left.and.arrow.down.right",   "Distance"),
-        ("sc.reflection", "rays",                                 "Refl."),
+        ("sc.brightness",        "sun.max",                              "Light"),
+        ("sc.blur",              "camera.aperture",                      "Sharp"),
+        ("sc.horizon",           "level",                                "Level"),
+        ("sc.instagrammability", "sparkles",                             "Vibe"),
+        ("sc.distance",          "arrow.up.left.and.arrow.down.right",   "Distance"),
+        ("sc.reflection",        "rays",                                 "Refl."),
     ]
 
     private var entries: [Entry] {
@@ -77,9 +77,16 @@ public struct SCRuleIconBar: View {
 
         // Quality rules — only show rules active for the current category
         // (present in result.rules). Inactive rules are omitted entirely.
-        for (id, icon, label) in Self.ruleVisuals {
+        for (id, icon, defaultLabel) in Self.ruleVisuals {
             guard let r = result.rules[id] else { continue }
             let color: Color = r.passed ? .green : (r.severity == .critical ? .red : .orange)
+            // Instagrammability rule: show numeric score when available, else fall back to label.
+            let label: String
+            if id == "sc.instagrammability", let score = r.numericScore {
+                label = String(format: "%.1f", score)
+            } else {
+                label = defaultLabel
+            }
             out.append(Entry(id: id, icon: icon, label: label, color: color))
         }
 

@@ -17,6 +17,8 @@ import CoreVideo
 /// `VNGenerateObjectnessBasedSaliencyImageRequest` typically returns 1–4 regions even in
 /// busy rooms, so the default threshold is intentionally low (3). The edge-density check
 /// fills the gap for pile-of-dishes scenes that saliency treats as a single region.
+@available(*, deprecated, renamed: "SCInstagrammabilityRule",
+           message: "SCClutterRule penalises intentional styling. Use SCInstagrammabilityRule instead.")
 public struct SCClutterRule: SCFrameRule {
     /// Maximum acceptable number of distinct salient objects. Default 3.
     public let maxSalientRegions: Int

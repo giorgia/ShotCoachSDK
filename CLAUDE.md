@@ -22,9 +22,9 @@ Three SPM targets:
 ```
 Sources/
 ├── ShotCoachCore/
-│   ├── Protocols/    ← SCFrameRule, SCCategoryConfig, SCCloudProvider, SCAnalysisDelegate
+│   ├── Protocols/    ← SCFrameRule, SCCategoryConfig, SCCloudProvider, SCAnalysisDelegate, SCAestheticModelProvider
 │   ├── Models/       ← SCFrame, SCFrameResult, SCCloudResult, SCPhoto, SCSessionSummary
-│   ├── Rules/        ← SCBrightnessRule, SCHorizonRule, SCBlurRule, SCClutterRule, SCDistanceRule, SCReflectionRule
+│   ├── Rules/        ← SCBrightnessRule, SCHorizonRule, SCBlurRule, SCClutterRule (deprecated), SCDistanceRule, SCReflectionRule, SCInstagrammabilityRule, SCAestheticRule
 │   ├── Engine/       ← SCFrameAnalyzer, SCCameraSession
 │   ├── Cloud/        ← SCOpenAIProvider, SCCloudError, SCKeychainService
 │   └── BuiltIn/      ← SCBuiltInCategory, SCBuiltInPrompts, SCCategoryOverride
@@ -103,14 +103,11 @@ Always read that file before starting a new task — it contains the exact Claud
 ```
 Week:           2
 Phase:          ShotCoachUI + SDK Demo · App Camera Integration
-Last completed: PR #9 merged — ShotCoachDemo shot-grid-first UX redesign
-                (ShotListView hero grid, ShotCameraView overlay, SessionResultsView,
-                batch withTaskGroup cloud analysis, demo sources moved to DemoApp/,
-                .gitignore added, dark mode + nav button fixes, full code review fixes:
-                force-unwrap guard, double-tap race, stale hasAPIKey, duplicate sheets,
-                integer division rounding, ThumbnailView cached decode, partial score notice)
-                — swift build clean, swift test 59/59
-Next task:      W2/T06 — check master plan
+Last completed: SCAestheticRule + SCAestheticModelProvider
+                (actor-based EMA rule, CoreML model injection protocol, 9 XCTests,
+                nonisolated constants, graceful throw degradation)
+                — swift build clean, swift test 75/75
+Next task:      check master plan
 Branch:         (none — on main)
 Last tag:       (none)
 ```

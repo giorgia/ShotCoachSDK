@@ -196,7 +196,9 @@ public enum SCBuiltInCategory: String, SCCategoryConfig, Codable, Sendable {
         switch self {
         case .homeListing:
             // Level horizon matters strongly for architectural shots.
-            return [SCBrightnessRule(), SCHorizonRule(), SCBlurRule(), SCClutterRule()]
+            // SCInstagrammabilityRule replaces SCClutterRule — gallery walls and styled
+            // shelves now score positively on composition rather than triggering clutter alerts.
+            return [SCBrightnessRule(), SCHorizonRule(), SCBlurRule(), SCInstagrammabilityRule()]
         case .carListing:
             // Reflections on bodywork and glass are a primary quality signal.
             return [SCBrightnessRule(), SCReflectionRule(), SCBlurRule(), SCDistanceRule()]
@@ -205,9 +207,9 @@ public enum SCBuiltInCategory: String, SCCategoryConfig, Codable, Sendable {
             return [SCBrightnessRule(), SCBlurRule(), SCReflectionRule(), SCHorizonRule()]
         case .foodPhoto:
             // Overhead hero shots are deliberately tilted — relax horizon to ±15°.
-            // SCClutterRule is intentionally omitted: styled food photography relies on
-            // props and garnish that would incorrectly trigger clutter detection.
-            return [SCBrightnessRule(), SCBlurRule(), SCHorizonRule(maxTiltDegrees: 15.0)]
+            // SCInstagrammabilityRule added: overhead hero shots with styled props now score
+            // positively on composition quality (focal clarity, balance, variety, lighting).
+            return [SCBrightnessRule(), SCBlurRule(), SCHorizonRule(maxTiltDegrees: 15.0), SCInstagrammabilityRule()]
         }
     }
 
