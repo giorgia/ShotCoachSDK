@@ -53,10 +53,6 @@ final class HomeListingAestheticModel: SCAestheticModelProvider {
         headInputName  = headModel.modelDescription.inputDescriptionsByName.keys.first  ?? "embedding"
         headOutputName = headModel.modelDescription.outputDescriptionsByName.keys.first ?? "var_5"
 
-        #if DEBUG
-        print("[AestheticModel] clip: \(clipInputName) → \(clipOutputName)")
-        print("[AestheticModel] head: \(headInputName) → \(headOutputName)")
-        #endif
     }
 
     // MARK: - SCAestheticModelProvider
