@@ -60,6 +60,10 @@ public actor SCAestheticRule: SCFrameRule {
     // MARK: - SCFrameRule
 
     public func evaluate(_ frame: SCFrame) async -> SCRuleResult {
+        // Snapshot actor state before any suspension point so concurrent callers
+        // each work from their own captured value and the final write is coherent.
+        let previousSmoothed = smoothedScore
+
         // Heuristic baseline — runs regardless of model availability.
         let heuristicScore = await SCInstagrammabilityRule().evaluate(frame).numericScore ?? 5.0
 
@@ -74,8 +78,9 @@ public actor SCAestheticRule: SCFrameRule {
             blended = heuristicScore
         }
 
-        // EMA: smoothed = α * blended + (1 − α) * smoothed
-        smoothedScore = smoothingFactor * blended + (1.0 - smoothingFactor) * smoothedScore
+        // EMA: smoothed = α * blended + (1 − α) * previousSmoothed
+        // Single write after all async work — no partial-update hazard.
+        smoothedScore = smoothingFactor * blended + (1.0 - smoothingFactor) * previousSmoothed
 
         let score = smoothedScore
         let label = scoreLabel(score)

@@ -214,9 +214,12 @@ private struct ShotCell: View {
                     .padding(6)
                 }
             }
-            .task(id: entry.capturedPhoto?.imageData.count) {
+            .task(id: entry.capturedPhoto?.imageData) {
                 // Only score asynchronously when there is no live frameResult
                 // (i.e. photo came from the library, not the live camera).
+                // Data is Hashable — using the full payload as the id guarantees
+                // a new task fires whenever a different photo is assigned, even
+                // if two photos happen to share the same byte count.
                 guard entry.capturedPhoto?.frameResult?.rules["sc.aesthetic"] == nil,
                       let data = entry.capturedPhoto?.imageData,
                       let model = aestheticModel else { return }

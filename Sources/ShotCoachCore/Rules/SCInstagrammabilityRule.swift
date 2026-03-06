@@ -215,11 +215,11 @@ public struct SCInstagrammabilityRule: SCFrameRule {
     /// Narrower than `SCBrightnessRule`'s pass band — rewards well-exposed scenes
     /// without giving a free pass to any non-dark, non-blown frame.
     private func lightingScore(pixelBuffer: CVPixelBuffer) -> Double {
-        let luma = averageLuminance(of: pixelBuffer)
+        let luma = Double(averageLuminance(of: pixelBuffer))
         if luma >= 0.35, luma <= 0.65 { return 1.0 }
-        if luma < 0.35 { return Double(luma / 0.35) }
+        if luma < 0.35 { return luma / 0.35 }
         // luma > 0.65
-        return Double((1.0 - luma) / 0.35)
+        return (1.0 - luma) / 0.35
     }
 
     private func averageLuminance(of pixelBuffer: CVPixelBuffer) -> Float {

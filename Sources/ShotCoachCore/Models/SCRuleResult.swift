@@ -10,8 +10,8 @@ public struct SCRuleResult: Codable, Sendable {
     /// that `SCFrameAnalyzer` resolves to a full `SCShotType` via the category's
     /// `requiredShots` list.
     public let detectedShotTypeID: String?
-    /// Numeric quality score on a 0–10 scale. Currently set by `SCInstagrammabilityRule`;
-    /// `nil` for all other rules.
+    /// Numeric quality score on a 0–10 scale. Currently set by `SCInstagrammabilityRule`
+    /// and `SCAestheticRule`; `nil` for all other rules.
     public let numericScore: Double?
 
     public init(
