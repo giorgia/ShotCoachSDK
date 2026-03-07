@@ -67,6 +67,7 @@ struct ShotCameraView: View {
                 SCCameraGuidanceView(sdk: sdk)
                     .hideFeedbackPills()
                     .hideZoomControls()
+                    .hideLensButton()   // managed by cameraChrome below
                     .onResult { photo in
                         capturedImage = photo
                         Task {
@@ -137,6 +138,19 @@ struct ShotCameraView: View {
                     }
 
                     Spacer()
+
+                    // Lens toggle — top-centre (hidden when ultra-wide unavailable)
+                    if sdk.isUltraWideAvailable {
+                        Button { sdk.cycleLens() } label: {
+                            Text(sdk.lensMode == .ultraWide ? "0.5×" : "1×")
+                                .font(.system(size: 14, weight: .semibold).monospacedDigit())
+                                .foregroundStyle(.white)
+                                .frame(width: 44, height: 44)
+                                .background(.ultraThinMaterial)
+                                .clipShape(Circle())
+                        }
+                        Spacer()
+                    }
 
                     // Shot name — top-right
                     Text(shot.displayName)
