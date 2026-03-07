@@ -148,7 +148,11 @@ struct ShotCameraView: View {
 
                     Spacer()
 
-                    // Lens toggle — top-centre (hidden when ultra-wide unavailable)
+                    // Lens toggle — top-centre (hidden when ultra-wide unavailable).
+                    // Styled identically to SCCameraGuidanceView.lensButton; placed here
+                    // because the SDK's built-in button is suppressed via .hideLensButton()
+                    // to avoid overlap with SCRuleIconBar at the bottom of the frame.
+                    // Label shows the *active* magnification — tap to switch to the other.
                     if sdk.isUltraWideAvailable {
                         Button { sdk.cycleLens() } label: {
                             Text(sdk.lensMode == .ultraWide ? "0.5×" : "1×")

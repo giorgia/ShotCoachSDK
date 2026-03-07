@@ -112,11 +112,18 @@ public final class ShotCoach: ObservableObject {
 
     /// Switches the active lens. No-op when `isUltraWideAvailable` is `false`.
     /// Resets zoom to 1× — optical zoom ranges differ between lenses.
+    /// Published state is updated optimistically; rolls back if the hardware switch fails.
     public func switchLens(_ mode: SCLensMode) {
         guard mode == .main || isUltraWideAvailable else { return }
-        cameraSession.switchLens(mode)
+        let previousMode = lensMode
+        let previousZoom = zoomFactor
         lensMode   = mode
         zoomFactor = 1.0
+        cameraSession.switchLens(mode) { [weak self] success in
+            guard let self, !success else { return }
+            self.lensMode   = previousMode
+            self.zoomFactor = previousZoom
+        }
     }
 
     /// Toggles between `.main` and `.ultraWide`. No-op on devices without ultra-wide.

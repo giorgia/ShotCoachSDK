@@ -103,39 +103,57 @@ public final class SCCameraSession: NSObject {
 #endif
     }
 
-    /// Switches the active capture lens. No-op if the device does not have the
-    /// requested camera or if the session cannot accept the new input.
-    /// The caller is responsible for resetting zoom after a switch — optical zoom
-    /// ranges differ between lenses and the previous factor may be out of range.
-    public func switchLens(_ mode: SCLensMode) {
+    /// Switches the active capture lens.
+    /// - Parameter completion: Called on the main queue with `true` on success, `false`
+    ///   if the device is unavailable or the session cannot accept the new input.
+    ///   The caller should roll back any UI state on `false`.
+    public func switchLens(_ mode: SCLensMode, completion: ((Bool) -> Void)? = nil) {
 #if os(iOS)
         captureQueue.async { [weak self] in
-            guard let self else { return }
+            guard let self else {
+                DispatchQueue.main.async { completion?(false) }
+                return
+            }
+            // Skip if already on the requested lens — also prevents queued rapid-tap
+            // blocks from re-entering beginConfiguration after the first switch settles.
+            if self.captureDevice?.deviceType == mode.avDeviceType {
+                DispatchQueue.main.async { completion?(true) }
+                return
+            }
             guard let device = AVCaptureDevice.default(mode.avDeviceType, for: .video, position: .back),
-                  let newInput = try? AVCaptureDeviceInput(device: device) else { return }
-
+                  let newInput = try? AVCaptureDeviceInput(device: device) else {
+                DispatchQueue.main.async { completion?(false) }
+                return
+            }
             self.session.beginConfiguration()
-            // Remove existing video inputs before adding the new device.
             self.session.inputs
                 .compactMap { $0 as? AVCaptureDeviceInput }
                 .filter { $0.device.hasMediaType(.video) }
                 .forEach { self.session.removeInput($0) }
             guard self.session.canAddInput(newInput) else {
                 self.session.commitConfiguration()
+                DispatchQueue.main.async { completion?(false) }
                 return
             }
             self.session.addInput(newInput)
             self.session.commitConfiguration()
             // Update captureDevice so zoom/focus/flash calls address the correct lens.
             self.captureDevice = device
+            DispatchQueue.main.async { completion?(true) }
         }
+#else
+        completion?(false)
 #endif
     }
 
     /// Maximum optical zoom factor available on this device (capped at 10×).
     public var maxZoomFactor: CGFloat {
 #if os(iOS)
-        min(captureDevice?.maxAvailableVideoZoomFactor ?? 1.0, 10.0)
+        // Read captureDevice on captureQueue to avoid a data race: switchLens writes
+        // captureDevice on captureQueue while this property may be read on the main actor.
+        var factor: CGFloat = 1.0
+        captureQueue.sync { factor = min(self.captureDevice?.maxAvailableVideoZoomFactor ?? 1.0, 10.0) }
+        return factor
 #else
         1.0
 #endif
