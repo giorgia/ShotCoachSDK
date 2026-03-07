@@ -38,8 +38,17 @@ struct ShotCameraView: View {
         self.heroNamespace = heroNamespace
         self.onCapture    = onCapture
         self.onDismiss    = onDismiss
+        // Inject an aesthetic rule for Home Listing if the model loads successfully.
+        // `try?` means a missing bundle resource silently disables the rule — all other
+        // rules still run normally, so the camera session is never blocked.
+        let aestheticRules: [any SCFrameRule] = {
+            guard info.category == .homeListing,
+                  let model = try? HomeListingAestheticModel() else { return [] }
+            return [SCAestheticRule(model: model)]
+        }()
         _sdk = StateObject(wrappedValue: ShotCoach(
-            category: SingleShotCategory(base: info.category, targetShot: shot),
+            category: SingleShotCategory(base: info.category, targetShot: shot,
+                                         extraRules: aestheticRules),
             apiKey: ""   // cloud deferred to batch in ShotListView
         ))
     }
@@ -156,11 +165,26 @@ struct ShotCameraView: View {
 private struct SingleShotCategory: SCCategoryConfig {
     let base: SCBuiltInCategory
     let targetShot: SCShotType
+    let extraRules: [any SCFrameRule]
+
+    init(base: SCBuiltInCategory, targetShot: SCShotType, extraRules: [any SCFrameRule] = []) {
+        self.base       = base
+        self.targetShot = targetShot
+        self.extraRules = extraRules
+    }
 
     var categoryID: String               { base.categoryID }
     var displayName: String              { base.displayName }
     var requiredShots: [SCShotType]      { [targetShot] }
-    var onDeviceRules: [any SCFrameRule] { base.onDeviceRules }
+    var onDeviceRules: [any SCFrameRule] {
+        // When SCAestheticRule is injected it blends with the instagrammability
+        // heuristic internally — drop the standalone rule to avoid a duplicate icon.
+        let hasAesthetic = extraRules.contains { $0.ruleID == "sc.aesthetic" }
+        let baseRules = hasAesthetic
+            ? base.onDeviceRules.filter { $0.ruleID != "sc.instagrammability" }
+            : base.onDeviceRules
+        return baseRules + extraRules
+    }
 
     func cloudPrompt(for shot: SCShotType) -> String {
         base.cloudPrompt(for: shot)

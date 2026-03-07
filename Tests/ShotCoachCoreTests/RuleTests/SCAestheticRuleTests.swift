@@ -1,0 +1,146 @@
+import XCTest
+import CoreVideo
+@testable import ShotCoachCore
+
+// MARK: - Mock providers
+
+private struct MockAestheticModel: SCAestheticModelProvider {
+    let fixedScore: Double
+    func score(_ pixelBuffer: CVPixelBuffer) async throws -> Double { fixedScore }
+}
+
+private struct ThrowingAestheticModel: SCAestheticModelProvider {
+    struct ModelError: Error {}
+    func score(_ pixelBuffer: CVPixelBuffer) async throws -> Double { throw ModelError() }
+}
+
+// MARK: - Tests
+
+final class SCAestheticRuleTests: XCTestCase {
+
+    // MARK: - Helpers
+
+    private func makeBuffer(width: Int = 32, height: Int = 32) -> CVPixelBuffer {
+        var pb: CVPixelBuffer?
+        let status = CVPixelBufferCreate(kCFAllocatorDefault, width, height,
+                                         kCVPixelFormatType_32BGRA, nil, &pb)
+        precondition(status == kCVReturnSuccess && pb != nil,
+                     "CVPixelBufferCreate failed: \(status)")
+        return pb!
+    }
+
+    private func makeFrame() -> SCFrame {
+        SCFrame(timestamp: 0, pixelBuffer: makeBuffer())
+    }
+
+    // MARK: - Identity / metadata
+
+    func test_ruleID() {
+        let rule = SCAestheticRule(model: MockAestheticModel(fixedScore: 5.0))
+        XCTAssertEqual(rule.ruleID, "sc.aesthetic")
+    }
+
+    func test_severity_isWarning() {
+        let rule = SCAestheticRule(model: MockAestheticModel(fixedScore: 5.0))
+        XCTAssertEqual(rule.severity, .warning)
+    }
+
+    func test_passingThreshold_default() {
+        let rule = SCAestheticRule(model: MockAestheticModel(fixedScore: 5.0))
+        XCTAssertEqual(rule.passingThreshold, 5.0)
+    }
+
+    // MARK: - Pass / fail
+
+    func test_scoreAboveThreshold_passes() async {
+        let rule = SCAestheticRule(model: MockAestheticModel(fixedScore: 8.0))
+        let result = await rule.evaluate(makeFrame())
+        XCTAssertTrue(result.passed)
+    }
+
+    func test_scoreBelowThreshold_fails() async {
+        let rule = SCAestheticRule(model: MockAestheticModel(fixedScore: 2.0))
+        let result = await rule.evaluate(makeFrame())
+        XCTAssertFalse(result.passed)
+    }
+
+    // MARK: - EMA smoothing
+
+    func test_emaSmoothing_reducesJitter() async {
+        // Feed a single rule 20 alternating 0/10 scores via SequenceModel.
+        // With α=0.3 and a neutral start (5.0), the smoothed output must stay
+        // well away from both extremes — proving EMA suppresses per-frame jitter.
+        let alternatingRule = SCAestheticRule(
+            model: SequenceModel(scores: (0..<20).map { $0.isMultiple(of: 2) ? 0.0 : 10.0 }),
+            smoothingFactor: 0.3
+        )
+        let frame = makeFrame()
+        var lastScore = 5.0
+        for _ in 0..<20 {
+            let res = await alternatingRule.evaluate(frame)
+            lastScore = try! XCTUnwrap(res.numericScore)
+        }
+        XCTAssertGreaterThan(lastScore, 0.5, "EMA should prevent score reaching 0 floor")
+        XCTAssertLessThan(lastScore, 9.5,    "EMA should prevent score reaching 10 ceiling")
+    }
+
+    // MARK: - Graceful degradation
+
+    func test_modelThrow_fallsBackToHeuristic() async {
+        // ThrowingAestheticModel always throws. The rule falls back to the
+        // instagrammability heuristic, so the score is allowed to drift from 5.0.
+        // We verify a valid score in [0, 10] is still returned (no crash, no nil).
+        let rule = SCAestheticRule(model: ThrowingAestheticModel())
+        let result = await rule.evaluate(makeFrame())
+        let score = try! XCTUnwrap(result.numericScore)
+        XCTAssertGreaterThanOrEqual(score, 0.0)
+        XCTAssertLessThanOrEqual(score, 10.0)
+    }
+
+    // MARK: - numericScore presence
+
+    func test_numericScore_isPresent() async {
+        let rule = SCAestheticRule(model: MockAestheticModel(fixedScore: 6.0))
+        let result = await rule.evaluate(makeFrame())
+        XCTAssertNotNil(result.numericScore)
+    }
+
+    // MARK: - Performance
+
+    func test_performance() async {
+        // Mock model returns instantly. 20 iterations must average < 80ms each.
+        let rule = SCAestheticRule(model: MockAestheticModel(fixedScore: 7.0))
+        let frame = makeFrame()
+        let iterations = 20
+        let start = Date()
+        for _ in 0..<iterations {
+            _ = await rule.evaluate(frame)
+        }
+        let elapsed = Date().timeIntervalSince(start)
+        let avgMs = (elapsed / Double(iterations)) * 1000
+        XCTAssertLessThan(avgMs, 80.0, "Average evaluation time \(avgMs)ms exceeds 80ms budget")
+    }
+}
+
+// MARK: - SequenceModel helper
+
+/// A mock provider that returns scores from a pre-defined sequence, cycling if exhausted.
+private actor SequenceModel: SCAestheticModelProvider {
+    private let scores: [Double]
+    private var index = 0
+
+    init(scores: [Double]) {
+        self.scores = scores
+    }
+
+    nonisolated func score(_ pixelBuffer: CVPixelBuffer) async throws -> Double {
+        await nextScore()
+    }
+
+    private func nextScore() -> Double {
+        guard !scores.isEmpty else { return 5.0 }
+        let s = scores[index % scores.count]
+        index += 1
+        return s
+    }
+}
