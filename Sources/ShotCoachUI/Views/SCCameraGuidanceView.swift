@@ -23,16 +23,13 @@ public struct SCCameraGuidanceView: View {
     private var showFlashButton:   Bool  = true
     private var showZoomControls:  Bool  = true
     private var showLibraryButton: Bool  = true
-    private var showLensButton:    Bool  = true
 
     // MARK: - State
 
     @State private var focusPoint:         CGPoint? = nil
-    @State private var showZoomLabel:      Bool = false
-    @State private var zoomLabelTask:      Task<Void, Never>? = nil
     /// Zoom factor captured at the start of each pinch gesture.
     /// `MagnificationGesture.onChanged` supplies a cumulative scale from gesture start,
-    /// so we must multiply this baseline — not the continuously-updating `sdk.zoomFactor` —
+    /// so we must multiply this baseline — not the continuously-updating `sdk.virtualZoomFactor` —
     /// by `delta` to avoid exponential runaway.
     @State private var zoomAtGestureStart: CGFloat = 1.0
     @State private var focusDismissTask:   Task<Void, Never>? = nil
@@ -68,7 +65,6 @@ public struct SCCameraGuidanceView: View {
         .onDisappear {
             sdk.stop()
             focusDismissTask?.cancel()
-            zoomLabelTask?.cancel()
         }
         .onChange(of: sdk.photos.count) { newCount in
             guard newCount > 0 else { return }
@@ -93,7 +89,7 @@ public struct SCCameraGuidanceView: View {
         var copy = self; copy.showFlashButton = false; return copy
     }
 
-    /// Hides the zoom level label that appears after a pinch gesture.
+    /// Hides the zoom pill row and pinch-to-zoom gesture.
     public func hideZoomControls() -> Self {
         var copy = self; copy.showZoomControls = false; return copy
     }
@@ -101,12 +97,6 @@ public struct SCCameraGuidanceView: View {
     /// Hides the photo-library picker button in the capture row.
     public func hideLibraryButton() -> Self {
         var copy = self; copy.showLibraryButton = false; return copy
-    }
-
-    /// Hides the lens-toggle button. Use this when targeting devices that always
-    /// lack an ultra-wide camera, or when your app provides its own lens UI.
-    public func hideLensButton() -> Self {
-        var copy = self; copy.showLensButton = false; return copy
     }
 
     // MARK: - Subviews
@@ -159,41 +149,36 @@ public struct SCCameraGuidanceView: View {
             .gesture(
                 MagnificationGesture()
                     .onChanged { delta in
-                        sdk.setZoom(zoomAtGestureStart * delta)
-                        if showZoomControls {
-                            showZoomLabel = true
-                            zoomLabelTask?.cancel()
-                            zoomLabelTask = Task {
-                                try? await Task.sleep(for: .seconds(2))
-                                showZoomLabel = false
-                            }
-                        }
+                        guard showZoomControls else { return }
+                        sdk.setVirtualZoom(zoomAtGestureStart * delta)
                     }
                     .onEnded { _ in
-                        zoomAtGestureStart = sdk.zoomFactor
+                        guard showZoomControls else { return }
+                        zoomAtGestureStart = sdk.virtualZoomFactor
                     }
             )
             .onChange(of: sdk.lensMode) { _ in
                 // Zoom ranges differ between lenses. Reset the gesture baseline so
                 // the first pinch after a switch doesn't jump to a stale factor.
-                zoomAtGestureStart = 1.0
+                zoomAtGestureStart = sdk.virtualZoomFactor
             }
         }
 #endif
     }
 
-    /// Lens toggle button — shown only when `isUltraWideAvailable` is `true`.
-    /// Displays the *current* magnification so tapping reveals the other option.
+    /// Zoom pill row — mirrors the native iOS Camera control.
+    /// Shows 0.5× only when an ultra-wide lens is available.
+    /// The active level is highlighted white; others are semi-transparent.
     @ViewBuilder
-    private var lensButton: some View {
-        if showLensButton && sdk.isUltraWideAvailable {
-            Button { sdk.cycleLens() } label: {
-                Text(sdk.lensMode == .ultraWide ? "0.5×" : "1×")
-                    .font(.system(size: 14, weight: .semibold).monospacedDigit())
-                    .foregroundStyle(.white)
-                    .frame(width: 44, height: 44)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Circle())
+    private var zoomPills: some View {
+        if showZoomControls {
+            let v = sdk.virtualZoomFactor
+            HStack(spacing: 4) {
+                if sdk.isUltraWideAvailable {
+                    ZoomPill(label: "0.5×", active: v < 1.0) { sdk.setVirtualZoom(0.5) }
+                }
+                ZoomPill(label: "1×",   active: v >= 1.0 && v < 1.5) { sdk.setVirtualZoom(1.0) }
+                ZoomPill(label: "2×",   active: v >= 1.5) { sdk.setVirtualZoom(2.0) }
             }
         }
     }
@@ -217,19 +202,10 @@ public struct SCCameraGuidanceView: View {
 
     private var feedbackArea: some View {
         VStack(spacing: 16) {
-            if showZoomControls {
-                Text(String(format: "%.1f×", sdk.zoomFactor))
-                    .font(.caption.weight(.semibold).monospacedDigit())
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 10).padding(.vertical, 4)
-                    .background(.ultraThinMaterial).clipShape(Capsule())
-                    .opacity(showZoomLabel ? 1 : 0)
-                    .animation(.easeInOut(duration: 0.2), value: showZoomLabel)
-            }
             if showFeedbackPills {
                 FeedbackStack(result: sdk.frameResult)
             }
-            lensButton
+            zoomPills
             captureRow
         }
     }
@@ -283,5 +259,27 @@ public struct SCCameraGuidanceView: View {
         } else {
             Color.clear.frame(width: 44, height: 44)
         }
+    }
+}
+
+// MARK: - ZoomPill
+
+/// A single zoom-level capsule button styled like the native iOS Camera pill row.
+private struct ZoomPill: View {
+    let label:  String
+    let active: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(label)
+                .font(.system(size: 13, weight: .semibold).monospacedDigit())
+                .foregroundStyle(active ? .black : .white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(active ? Color.white : Color.black.opacity(0.45))
+                .clipShape(Capsule())
+        }
+        .animation(.easeInOut(duration: 0.15), value: active)
     }
 }

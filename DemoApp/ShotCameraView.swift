@@ -68,8 +68,7 @@ struct ShotCameraView: View {
                 // Live camera + chrome.
                 SCCameraGuidanceView(sdk: sdk)
                     .hideFeedbackPills()
-                    .hideZoomControls()
-                    .hideLensButton()   // managed by cameraChrome below
+                    .hideZoomControls()   // pills managed by cameraChrome below
                     .onResult { photo in
                         capturedImage = photo
                         Task {
@@ -98,6 +97,18 @@ struct ShotCameraView: View {
 
     // MARK: - Subviews
 
+    /// Zoom pill row for the bottom letterbox chrome.
+    private var zoomPills: some View {
+        let v = sdk.virtualZoomFactor
+        return HStack(spacing: 4) {
+            if sdk.isUltraWideAvailable {
+                CameraZoomPill(label: "0.5×", active: v < 1.0) { sdk.setVirtualZoom(0.5) }
+            }
+            CameraZoomPill(label: "1×",   active: v >= 1.0 && v < 1.5) { sdk.setVirtualZoom(1.0) }
+            CameraZoomPill(label: "2×",   active: v >= 1.5) { sdk.setVirtualZoom(2.0) }
+        }
+    }
+
     @ViewBuilder
     private func freezeFrame(photo: SCPhoto) -> some View {
         let base: AnyView = UIImage(data: photo.imageData).map {
@@ -121,13 +132,18 @@ struct ShotCameraView: View {
             // bottomPad = barH - 70 places the bar's top edge at the 4:3 photo boundary,
             // with its bottom just above the 60 pt capture row.
             GeometryReader { geo in
+                // barH = height of each dark letterbox strip.
+                // Bottom letterbox holds: zoom pills (≈26 pt) + 8 pt gap + icon bar (≈55 pt) + bottomPad.
                 let barH      = max(0.0, (geo.size.height - geo.size.width * 4.0 / 3.0) / 2)
-                let bottomPad = max(8.0, barH - 70)
+                let bottomPad = max(8.0, barH - 105)
                 VStack {
                     Spacer()
-                    SCRuleIconBar(result: sdk.frameResult, currentShot: sdk.currentShot)
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, bottomPad)
+                    VStack(spacing: 8) {
+                        zoomPills
+                        SCRuleIconBar(result: sdk.frameResult, currentShot: sdk.currentShot)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, bottomPad)
                 }
             }
             .ignoresSafeArea()
@@ -147,23 +163,6 @@ struct ShotCameraView: View {
                     }
 
                     Spacer()
-
-                    // Lens toggle — top-centre (hidden when ultra-wide unavailable).
-                    // Styled identically to SCCameraGuidanceView.lensButton; placed here
-                    // because the SDK's built-in button is suppressed via .hideLensButton()
-                    // to avoid overlap with SCRuleIconBar at the bottom of the frame.
-                    // Label shows the *active* magnification — tap to switch to the other.
-                    if sdk.isUltraWideAvailable {
-                        Button { sdk.cycleLens() } label: {
-                            Text(sdk.lensMode == .ultraWide ? "0.5×" : "1×")
-                                .font(.system(size: 14, weight: .semibold).monospacedDigit())
-                                .foregroundStyle(.white)
-                                .frame(width: 44, height: 44)
-                                .background(.ultraThinMaterial)
-                                .clipShape(Circle())
-                        }
-                        Spacer()
-                    }
 
                     // Shot name — top-right
                     Text(shot.displayName)
@@ -215,5 +214,27 @@ private struct SingleShotCategory: SCCategoryConfig {
 
     func cloudPrompt(for shot: SCShotType) -> String {
         base.cloudPrompt(for: shot)
+    }
+}
+
+// MARK: - CameraZoomPill
+
+/// Pill button styled like the native iOS Camera zoom selector.
+private struct CameraZoomPill: View {
+    let label:  String
+    let active: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(label)
+                .font(.system(size: 13, weight: .semibold).monospacedDigit())
+                .foregroundStyle(active ? .black : .white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(active ? Color.white : Color.black.opacity(0.45))
+                .clipShape(Capsule())
+        }
+        .animation(.easeInOut(duration: 0.15), value: active)
     }
 }

@@ -31,6 +31,14 @@ public final class ShotCoach: ObservableObject {
     /// Current zoom factor reflected from the camera device. Updated by `setZoom(_:)`.
     @Published public private(set) var zoomFactor: CGFloat = 1.0
 
+    /// Apparent zoom spanning both lenses.
+    /// - `0.5` = ultra-wide at its native 1× (half the field of view of the main lens).
+    /// - `1.0` = main lens at 1×.
+    /// - `>1.0` = main lens with digital/optical zoom.
+    public var virtualZoomFactor: CGFloat {
+        lensMode == .ultraWide ? 0.5 : zoomFactor
+    }
+
     /// Current flash mode applied at capture time. Cycled by `cycleFlash()`.
     @Published public private(set) var flashMode: SCFlashMode = .auto
 
@@ -108,6 +116,24 @@ public final class ShotCoach: ObservableObject {
     public func setZoom(_ factor: CGFloat) {
         cameraSession.setZoom(factor)
         zoomFactor = max(1.0, min(cameraSession.maxZoomFactor, factor))
+    }
+
+    /// Sets zoom across both lenses using a unified virtual scale:
+    /// - `0.5` → ultra-wide at its native 1×
+    /// - `1.0` → main lens at 1×
+    /// - `> 1.0` → main lens with optical/digital zoom
+    ///
+    /// Automatically switches lenses when crossing the 1× boundary.
+    /// No-op for values below 0.5 or when ultra-wide is unavailable and factor < 1.
+    public func setVirtualZoom(_ factor: CGFloat) {
+        if factor < 1.0 {
+            guard isUltraWideAvailable else { return }
+            if lensMode != .ultraWide { switchLens(.ultraWide) }
+            // Ultra-wide always stays at 1× hardware zoom; the 0.5× is its native FOV.
+        } else {
+            if lensMode != .main { switchLens(.main) }
+            setZoom(factor)
+        }
     }
 
     /// Switches the active lens. No-op when `isUltraWideAvailable` is `false`.
