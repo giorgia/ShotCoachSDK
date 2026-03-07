@@ -147,13 +147,11 @@ public final class SCCameraSession: NSObject {
     }
 
     /// Maximum optical zoom factor available on this device (capped at 10×).
+    /// Read without queue sync — a stale value only affects the display clamp, not the
+    /// hardware clamp (SCCameraSession.setZoom recalculates independently on captureQueue).
     public var maxZoomFactor: CGFloat {
 #if os(iOS)
-        // Read captureDevice on captureQueue to avoid a data race: switchLens writes
-        // captureDevice on captureQueue while this property may be read on the main actor.
-        var factor: CGFloat = 1.0
-        captureQueue.sync { factor = min(self.captureDevice?.maxAvailableVideoZoomFactor ?? 1.0, 10.0) }
-        return factor
+        min(captureDevice?.maxAvailableVideoZoomFactor ?? 10.0, 10.0)
 #else
         1.0
 #endif

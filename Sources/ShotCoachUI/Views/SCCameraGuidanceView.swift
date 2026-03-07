@@ -61,7 +61,12 @@ public struct SCCameraGuidanceView: View {
             // Ready ring — centered over the preview.
             ReadyIndicator(isReady: sdk.frameResult.isReadyToCapture)
         }
-        .onAppear   { sdk.start() }
+        .onAppear {
+            sdk.start()
+            // Seed gesture baseline from the SDK's current lens so the first pinch
+            // doesn't jump when a lens was preset before the view appeared.
+            zoomAtGestureStart = sdk.virtualZoomFactor
+        }
         .onDisappear {
             sdk.stop()
             focusDismissTask?.cancel()
@@ -149,11 +154,9 @@ public struct SCCameraGuidanceView: View {
             .gesture(
                 MagnificationGesture()
                     .onChanged { delta in
-                        guard showZoomControls else { return }
                         sdk.setVirtualZoom(zoomAtGestureStart * delta)
                     }
                     .onEnded { _ in
-                        guard showZoomControls else { return }
                         zoomAtGestureStart = sdk.virtualZoomFactor
                     }
             )

@@ -97,16 +97,19 @@ struct ShotCameraView: View {
 
     // MARK: - Subviews
 
-    /// Zoom pill row for the bottom letterbox chrome.
-    private var zoomPills: some View {
+    /// Single zoom label shown in the top chrome — e.g. "0.5×", "1×", "2.1×".
+    private var zoomLabel: some View {
         let v = sdk.virtualZoomFactor
-        return HStack(spacing: 4) {
-            if sdk.isUltraWideAvailable {
-                CameraZoomPill(label: "0.5×", active: v < 1.0) { sdk.setVirtualZoom(0.5) }
-            }
-            CameraZoomPill(label: "1×",   active: v >= 1.0 && v < 1.5) { sdk.setVirtualZoom(1.0) }
-            CameraZoomPill(label: "2×",   active: v >= 1.5) { sdk.setVirtualZoom(2.0) }
-        }
+        let text = v < 1.0
+            ? "0.5×"
+            : (v == 1.0 ? "1×" : String(format: "%.1f×", v))
+        return Text(text)
+            .font(.system(size: 14, weight: .semibold).monospacedDigit())
+            .foregroundStyle(.white)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(.ultraThinMaterial)
+            .clipShape(Capsule())
     }
 
     @ViewBuilder
@@ -132,18 +135,15 @@ struct ShotCameraView: View {
             // bottomPad = barH - 70 places the bar's top edge at the 4:3 photo boundary,
             // with its bottom just above the 60 pt capture row.
             GeometryReader { geo in
-                // barH = height of each dark letterbox strip.
-                // Bottom letterbox holds: zoom pills (≈26 pt) + 8 pt gap + icon bar (≈55 pt) + bottomPad.
+                // Icon bar height ≈ 55 pt. bottomPad = barH - 70 places its top edge at
+                // the 4:3 photo boundary, with its bottom just above the 60 pt capture row.
                 let barH      = max(0.0, (geo.size.height - geo.size.width * 4.0 / 3.0) / 2)
-                let bottomPad = max(8.0, barH - 105)
+                let bottomPad = max(8.0, barH - 70)
                 VStack {
                     Spacer()
-                    VStack(spacing: 8) {
-                        zoomPills
-                        SCRuleIconBar(result: sdk.frameResult, currentShot: sdk.currentShot)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, bottomPad)
+                    SCRuleIconBar(result: sdk.frameResult, currentShot: sdk.currentShot)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, bottomPad)
                 }
             }
             .ignoresSafeArea()
@@ -161,6 +161,11 @@ struct ShotCameraView: View {
                             .clipShape(Circle())
                             .foregroundStyle(.white)
                     }
+
+                    Spacer()
+
+                    // Zoom label — centre; shows active virtual zoom level.
+                    zoomLabel
 
                     Spacer()
 
@@ -217,24 +222,3 @@ private struct SingleShotCategory: SCCategoryConfig {
     }
 }
 
-// MARK: - CameraZoomPill
-
-/// Pill button styled like the native iOS Camera zoom selector.
-private struct CameraZoomPill: View {
-    let label:  String
-    let active: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Text(label)
-                .font(.system(size: 13, weight: .semibold).monospacedDigit())
-                .foregroundStyle(active ? .black : .white)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(active ? Color.white : Color.black.opacity(0.45))
-                .clipShape(Capsule())
-        }
-        .animation(.easeInOut(duration: 0.15), value: active)
-    }
-}

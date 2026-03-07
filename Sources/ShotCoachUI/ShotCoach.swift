@@ -119,36 +119,51 @@ public final class ShotCoach: ObservableObject {
     }
 
     /// Sets zoom across both lenses using a unified virtual scale:
-    /// - `0.5` → ultra-wide at its native 1×
+    /// - Any value `< 1.0` → ultra-wide lens at its native 1× (all map to the same FOV)
     /// - `1.0` → main lens at 1×
     /// - `> 1.0` → main lens with optical/digital zoom
     ///
     /// Automatically switches lenses when crossing the 1× boundary.
-    /// No-op for values below 0.5 or when ultra-wide is unavailable and factor < 1.
+    /// No-op when ultra-wide is unavailable and factor < 1.
     public func setVirtualZoom(_ factor: CGFloat) {
         if factor < 1.0 {
             guard isUltraWideAvailable else { return }
             if lensMode != .ultraWide { switchLens(.ultraWide) }
-            // Ultra-wide always stays at 1× hardware zoom; the 0.5× is its native FOV.
+            // Ultra-wide always stays at 1× hardware zoom; the 0.5× label is its native FOV.
         } else {
-            if lensMode != .main { switchLens(.main) }
-            setZoom(factor)
+            if lensMode != .main {
+                switchLens(.main)
+                // Skip setZoom during the switch — captureQueue is busy; the gesture
+                // baseline resets on onEnded so the next pinch starts from the correct factor.
+            } else if !isSwitchingLens {
+                setZoom(factor)
+            }
         }
     }
 
-    /// Switches the active lens. No-op when `isUltraWideAvailable` is `false`.
+    /// Switches the active lens. No-op when `isUltraWideAvailable` is `false` or a
+    /// switch is already in flight (prevents rapid-pinch from stacking capture-queue blocks).
     /// Resets zoom to 1× — optical zoom ranges differ between lenses.
     /// Published state is updated optimistically; rolls back if the hardware switch fails.
     public func switchLens(_ mode: SCLensMode) {
         guard mode == .main || isUltraWideAvailable else { return }
+        guard !isSwitchingLens else { return }
         let previousMode = lensMode
         let previousZoom = zoomFactor
+        isSwitchingLens = true
         lensMode   = mode
         zoomFactor = 1.0
         cameraSession.switchLens(mode) { [weak self] success in
-            guard let self, !success else { return }
-            self.lensMode   = previousMode
-            self.zoomFactor = previousZoom
+            // Delivered on DispatchQueue.main (see SCCameraSession.switchLens).
+            // Explicit Task @MainActor ensures forward-compatibility with Swift 6 strict concurrency.
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.isSwitchingLens = false
+                if !success {
+                    self.lensMode   = previousMode
+                    self.zoomFactor = previousZoom
+                }
+            }
         }
     }
 
@@ -189,6 +204,9 @@ public final class ShotCoach: ObservableObject {
 
     private let cloudProvider: any SCCloudProvider
     private let cameraSession: SCCameraSession
+    /// True while a hardware lens swap is in flight on captureQueue.
+    /// Prevents stacking multiple `beginConfiguration` blocks from rapid pinch events.
+    private var isSwitchingLens = false
 
     private func advanceShot() {
         guard let current = currentShot,
