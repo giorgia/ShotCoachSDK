@@ -23,6 +23,7 @@ public struct SCCameraGuidanceView: View {
     private var showFlashButton:   Bool  = true
     private var showZoomControls:  Bool  = true
     private var showLibraryButton: Bool  = true
+    private var showLensButton:    Bool  = true
 
     // MARK: - State
 
@@ -102,6 +103,12 @@ public struct SCCameraGuidanceView: View {
         var copy = self; copy.showLibraryButton = false; return copy
     }
 
+    /// Hides the lens-toggle button. Use this when targeting devices that always
+    /// lack an ultra-wide camera, or when your app provides its own lens UI.
+    public func hideLensButton() -> Self {
+        var copy = self; copy.showLensButton = false; return copy
+    }
+
     // MARK: - Subviews
 
     @ViewBuilder
@@ -166,8 +173,29 @@ public struct SCCameraGuidanceView: View {
                         zoomAtGestureStart = sdk.zoomFactor
                     }
             )
+            .onChange(of: sdk.lensMode) { _ in
+                // Zoom ranges differ between lenses. Reset the gesture baseline so
+                // the first pinch after a switch doesn't jump to a stale factor.
+                zoomAtGestureStart = 1.0
+            }
         }
 #endif
+    }
+
+    /// Lens toggle button — shown only when `isUltraWideAvailable` is `true`.
+    /// Displays the *current* magnification so tapping reveals the other option.
+    @ViewBuilder
+    private var lensButton: some View {
+        if showLensButton && sdk.isUltraWideAvailable {
+            Button { sdk.cycleLens() } label: {
+                Text(sdk.lensMode == .ultraWide ? "0.5×" : "1×")
+                    .font(.system(size: 14, weight: .semibold).monospacedDigit())
+                    .foregroundStyle(.white)
+                    .frame(width: 44, height: 44)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Circle())
+            }
+        }
     }
 
     /// Flash cycle button — sits at the right end of the capture row, balancing `libraryButton`.
@@ -201,6 +229,7 @@ public struct SCCameraGuidanceView: View {
             if showFeedbackPills {
                 FeedbackStack(result: sdk.frameResult)
             }
+            lensButton
             captureRow
         }
     }

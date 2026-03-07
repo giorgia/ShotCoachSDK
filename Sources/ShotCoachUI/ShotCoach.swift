@@ -34,10 +34,18 @@ public final class ShotCoach: ObservableObject {
     /// Current flash mode applied at capture time. Cycled by `cycleFlash()`.
     @Published public private(set) var flashMode: SCFlashMode = .auto
 
+    /// The active camera lens. Toggled by `cycleLens()` / `switchLens(_:)`.
+    /// Always `.main` on devices without an ultra-wide camera.
+    @Published public private(set) var lensMode: SCLensMode = .main
+
     // MARK: - Public read-only
 
     /// The category driving this session.
     public let category: any SCCategoryConfig
+
+    /// True when the device has a physical ultra-wide camera (iPhone 11+).
+    /// Observe this before showing a lens-toggle control.
+    public var isUltraWideAvailable: Bool { cameraSession.isUltraWideAvailable }
 
     /// The underlying `AVCaptureSession` — consumed by `AVCapturePreviewView`.
     /// Intended for custom preview-layer integrations; consumers using `SCCameraGuidanceView`
@@ -100,6 +108,20 @@ public final class ShotCoach: ObservableObject {
     public func setZoom(_ factor: CGFloat) {
         cameraSession.setZoom(factor)
         zoomFactor = max(1.0, min(cameraSession.maxZoomFactor, factor))
+    }
+
+    /// Switches the active lens. No-op when `isUltraWideAvailable` is `false`.
+    /// Resets zoom to 1× — optical zoom ranges differ between lenses.
+    public func switchLens(_ mode: SCLensMode) {
+        guard mode == .main || isUltraWideAvailable else { return }
+        cameraSession.switchLens(mode)
+        lensMode   = mode
+        zoomFactor = 1.0
+    }
+
+    /// Toggles between `.main` and `.ultraWide`. No-op on devices without ultra-wide.
+    public func cycleLens() {
+        switchLens(lensMode == .main ? .ultraWide : .main)
     }
 
     /// Cycles flash mode: off → auto → on → off.

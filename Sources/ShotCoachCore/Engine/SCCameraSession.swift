@@ -93,6 +93,45 @@ public final class SCCameraSession: NSObject {
     /// Current flash mode applied when `capturePhoto()` is called. Defaults to `.auto`.
     public var flashMode: SCFlashMode = .auto
 
+    /// True when this device has a physical ultra-wide camera (iPhone 11+).
+    /// Use this to conditionally show a lens-toggle control.
+    public var isUltraWideAvailable: Bool {
+#if os(iOS)
+        AVCaptureDevice.default(.builtInUltraWideCamera, for: .video, position: .back) != nil
+#else
+        false
+#endif
+    }
+
+    /// Switches the active capture lens. No-op if the device does not have the
+    /// requested camera or if the session cannot accept the new input.
+    /// The caller is responsible for resetting zoom after a switch — optical zoom
+    /// ranges differ between lenses and the previous factor may be out of range.
+    public func switchLens(_ mode: SCLensMode) {
+#if os(iOS)
+        captureQueue.async { [weak self] in
+            guard let self else { return }
+            guard let device = AVCaptureDevice.default(mode.avDeviceType, for: .video, position: .back),
+                  let newInput = try? AVCaptureDeviceInput(device: device) else { return }
+
+            self.session.beginConfiguration()
+            // Remove existing video inputs before adding the new device.
+            self.session.inputs
+                .compactMap { $0 as? AVCaptureDeviceInput }
+                .filter { $0.device.hasMediaType(.video) }
+                .forEach { self.session.removeInput($0) }
+            guard self.session.canAddInput(newInput) else {
+                self.session.commitConfiguration()
+                return
+            }
+            self.session.addInput(newInput)
+            self.session.commitConfiguration()
+            // Update captureDevice so zoom/focus/flash calls address the correct lens.
+            self.captureDevice = device
+        }
+#endif
+    }
+
     /// Maximum optical zoom factor available on this device (capped at 10×).
     public var maxZoomFactor: CGFloat {
 #if os(iOS)
@@ -229,6 +268,19 @@ extension SCCameraSession: AVCaptureVideoDataOutputSampleBufferDelegate {
         }
     }
 }
+
+// MARK: - SCLensMode → AVCaptureDevice.DeviceType
+
+#if os(iOS)
+fileprivate extension SCLensMode {
+    var avDeviceType: AVCaptureDevice.DeviceType {
+        switch self {
+        case .main:      return .builtInWideAngleCamera
+        case .ultraWide: return .builtInUltraWideCamera
+        }
+    }
+}
+#endif
 
 // MARK: - SCFlashMode → AVCaptureDevice.FlashMode
 
