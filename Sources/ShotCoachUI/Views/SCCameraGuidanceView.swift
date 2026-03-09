@@ -32,6 +32,9 @@ public struct SCCameraGuidanceView: View {
     /// so we must multiply this baseline — not the continuously-updating `sdk.virtualZoomFactor` —
     /// by `delta` to avoid exponential runaway.
     @State private var zoomAtGestureStart: CGFloat = 1.0
+    /// True while a MagnificationGesture is active. Prevents `onChange(of: sdk.lensMode)` from
+    /// resetting `zoomAtGestureStart` mid-pinch, which would cause a sudden jump.
+    @State private var isPinching: Bool = false
     @State private var focusDismissTask:   Task<Void, Never>? = nil
     @State private var pickerItem: PhotosPickerItem? = nil
 
@@ -154,15 +157,19 @@ public struct SCCameraGuidanceView: View {
             .gesture(
                 MagnificationGesture()
                     .onChanged { delta in
+                        isPinching = true
                         sdk.setVirtualZoom(zoomAtGestureStart * delta)
                     }
                     .onEnded { _ in
+                        isPinching = false
                         zoomAtGestureStart = sdk.virtualZoomFactor
                     }
             )
             .onChange(of: sdk.lensMode) { _ in
-                // Zoom ranges differ between lenses. Reset the gesture baseline so
-                // the first pinch after a switch doesn't jump to a stale factor.
+                // Only reset the baseline when no pinch is active. Mid-pinch the
+                // cumulative delta is still relative to zoomAtGestureStart, so
+                // changing it here would cause a sudden jump in zoom level.
+                guard !isPinching else { return }
                 zoomAtGestureStart = sdk.virtualZoomFactor
             }
         }

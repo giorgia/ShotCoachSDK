@@ -131,13 +131,11 @@ public final class ShotCoach: ObservableObject {
             if lensMode != .ultraWide { switchLens(.ultraWide) }
             // Ultra-wide always stays at 1× hardware zoom; the 0.5× label is its native FOV.
         } else {
-            if lensMode != .main {
-                switchLens(.main)
-                // Skip setZoom during the switch — captureQueue is busy; the gesture
-                // baseline resets on onEnded so the next pinch starts from the correct factor.
-            } else if !isSwitchingLens {
-                setZoom(factor)
-            }
+            if lensMode != .main { switchLens(.main) }
+            // Always call setZoom even while isSwitchingLens — captureQueue is serial, so
+            // the setZoom block runs after the switchLens block and targets the correct device.
+            // Updating zoomFactor synchronously here avoids a visible stall in the zoom label.
+            setZoom(factor)
         }
     }
 
