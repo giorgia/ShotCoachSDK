@@ -239,7 +239,7 @@ private struct ShotCell: View {
                 if let score = displayScore {
                     HStack(spacing: 3) {
                         Image(systemName: "sparkles").font(.caption.weight(.semibold))
-                        Text(score, format: .number.precision(.fractionLength(1))).font(.caption.weight(.bold))
+                        Text(score, format: .number.precision(.fractionLength(0))).font(.caption.weight(.bold))
                     }
                     .foregroundStyle(.white)
                     .padding(.horizontal, 7)

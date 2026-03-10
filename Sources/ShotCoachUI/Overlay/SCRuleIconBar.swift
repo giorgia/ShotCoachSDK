@@ -84,7 +84,7 @@ public struct SCRuleIconBar: View {
             // Instagrammability rule: show numeric score when available, else fall back to label.
             let label: String
             if (id == "sc.aesthetic" || id == "sc.instagrammability"), let score = r.numericScore {
-                label = score.formatted(.number.precision(.fractionLength(1)))
+                label = score.formatted(.number.precision(.fractionLength(0)))
             } else {
                 label = defaultLabel
             }
