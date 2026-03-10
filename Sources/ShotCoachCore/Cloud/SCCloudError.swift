@@ -17,3 +17,24 @@ public enum SCCloudError: Error, Codable, Sendable {
     /// The image data exceeds the provider's size limit after compression.
     case imageTooLarge
 }
+
+extension SCCloudError: LocalizedError {
+    public var errorDescription: String? {
+        switch self {
+        case .notConfigured:
+            return "No cloud provider configured."
+        case .invalidAPIKey:
+            return "Invalid API key — check your OpenAI key in Settings."
+        case .rateLimited:
+            return "OpenAI rate limit reached. Wait a moment and try again."
+        case .networkFailure(let detail):
+            return "Network error: \(detail)"
+        case .invalidResponse:
+            return "Unexpected response from OpenAI."
+        case .jsonParsingFailed(let detail):
+            return "Could not parse AI response: \(detail)"
+        case .imageTooLarge:
+            return "Image is too large to send. Try a lower-resolution photo."
+        }
+    }
+}

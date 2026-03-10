@@ -124,7 +124,7 @@ public struct SCOpenAIProvider: SCCloudProvider, Sendable {
         case 500...599:
             throw SCCloudError.networkFailure("Server error \(http.statusCode)")
         default:
-            throw SCCloudError.invalidResponse
+            throw SCCloudError.networkFailure("Unexpected HTTP \(http.statusCode)")
         }
     }
 
@@ -161,7 +161,7 @@ public struct SCOpenAIProvider: SCCloudProvider, Sendable {
         do {
             apiResponse = try decoder.decode(OpenAIResponse.self, from: data)
         } catch {
-            throw SCCloudError.invalidResponse
+            throw SCCloudError.jsonParsingFailed("Unexpected response format: \(error.localizedDescription)")
         }
 
         guard let content = apiResponse.choices.first?.message.content else {
