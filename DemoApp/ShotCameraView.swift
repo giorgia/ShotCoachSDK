@@ -44,7 +44,9 @@ struct ShotCameraView: View {
         let aestheticRules: [any SCFrameRule] = {
             guard info.category == .homeListing,
                   let model = try? HomeListingAestheticModel() else { return [] }
-            return [SCAestheticRule(model: model)]
+            // passingThreshold: 7.0 — score must reach 7/10 for the icon to turn
+            // green. The default 5.0 made the icon green for any average scene.
+            return [SCAestheticRule(model: model, passingThreshold: 7.0)]
         }()
         _sdk = StateObject(wrappedValue: ShotCoach(
             category: SingleShotCategory(base: info.category, targetShot: shot,
@@ -66,7 +68,7 @@ struct ShotCameraView: View {
                 // Live camera + chrome.
                 SCCameraGuidanceView(sdk: sdk)
                     .hideFeedbackPills()
-                    .hideZoomControls()
+                    .hideZoomControls()   // pills managed by cameraChrome below
                     .onResult { photo in
                         capturedImage = photo
                         Task {
@@ -84,22 +86,47 @@ struct ShotCameraView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .task {
+            // Default to ultra-wide for home listing — wider FOV captures more
+            // of each room. No-op on devices without a hardware ultra-wide lens.
+            if info.category == .homeListing {
+                sdk.switchLens(.ultraWide)
+            }
+        }
     }
 
     // MARK: - Subviews
 
+    /// Single zoom label shown in the top chrome — e.g. "0.5×", "1×", "2.1×".
+    private var zoomLabel: some View {
+        let v = sdk.virtualZoomFactor
+        let text = v < 1.0
+            ? "0.5×"
+            : (v == 1.0 ? "1×" : "\(Double(v).formatted(.number.precision(.fractionLength(1))))×")
+        return Text(text)
+            .font(.system(size: 14, weight: .semibold).monospacedDigit())
+            .foregroundStyle(.white)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(.ultraThinMaterial)
+            .clipShape(Capsule())
+    }
+
     @ViewBuilder
     private func freezeFrame(photo: SCPhoto) -> some View {
-        let base: AnyView = UIImage(data: photo.imageData).map {
-            AnyView(Image(uiImage: $0).resizable().scaledToFill())
-        } ?? AnyView(Color.black)
-        base
-            .ignoresSafeArea()
-            .matchedGeometryEffect(
-                id: "photo_\(shot.id)",
-                in: heroNamespace,
-                isSource: true
-            )
+        Group {
+            if let img = UIImage(data: photo.imageData) {
+                Image(uiImage: img).resizable().scaledToFill()
+            } else {
+                Color.black
+            }
+        }
+        .ignoresSafeArea()
+        .matchedGeometryEffect(
+            id: "photo_\(shot.id)",
+            in: heroNamespace,
+            isSource: true
+        )
     }
 
     private var cameraChrome: some View {
@@ -111,6 +138,8 @@ struct ShotCameraView: View {
             // bottomPad = barH - 70 places the bar's top edge at the 4:3 photo boundary,
             // with its bottom just above the 60 pt capture row.
             GeometryReader { geo in
+                // Icon bar height ≈ 55 pt. bottomPad = barH - 70 places its top edge at
+                // the 4:3 photo boundary, with its bottom just above the 60 pt capture row.
                 let barH      = max(0.0, (geo.size.height - geo.size.width * 4.0 / 3.0) / 2)
                 let bottomPad = max(8.0, barH - 70)
                 VStack {
@@ -135,6 +164,11 @@ struct ShotCameraView: View {
                             .clipShape(Circle())
                             .foregroundStyle(.white)
                     }
+
+                    Spacer()
+
+                    // Zoom label — centre; shows active virtual zoom level.
+                    zoomLabel
 
                     Spacer()
 
@@ -190,3 +224,4 @@ private struct SingleShotCategory: SCCategoryConfig {
         base.cloudPrompt(for: shot)
     }
 }
+

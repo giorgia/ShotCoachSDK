@@ -39,9 +39,10 @@ struct SessionResultsView: View {
                 LazyVStack(spacing: 0) {
                     ForEach(entries.indices, id: \.self) { i in
                         let entry = entries[i]
-                        ResultRow(entry: entry, cloudResult: cloudResults[entry.id])
-                            .contentShape(Rectangle())
-                            .onTapGesture { selectedEntry = entry }
+                        Button { selectedEntry = entry } label: {
+                            ResultRow(entry: entry, cloudResult: cloudResults[entry.id])
+                        }
+                        .buttonStyle(.plain)
 
                         if i < entries.count - 1 {
                             Divider()
@@ -85,7 +86,7 @@ struct SessionResultsView: View {
                 // Surface partial scoring so the average isn't silently misleading.
                 if cloudResults.count < entries.count {
                     Text("\(cloudResults.count) of \(entries.count) shots scored")
-                        .font(.caption2)
+                        .font(.caption)
                         .foregroundStyle(.tertiary)
                 }
             }
@@ -208,7 +209,7 @@ private struct ThumbnailView: View {
                 Color(white: 0.2)
             }
         }
-        .task(id: data.hashValue) {
+        .task(id: data) {
             image = UIImage(data: data)
         }
     }

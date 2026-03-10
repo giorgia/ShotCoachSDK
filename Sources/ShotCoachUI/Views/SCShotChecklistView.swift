@@ -41,7 +41,7 @@ public struct SCShotChecklistView: View {
                 // currently recognises (confidence > classifier threshold).
                 if detected {
                     Text("Detected")
-                        .font(.caption2.weight(.medium))
+                        .font(.caption.weight(.medium))
                         .foregroundStyle(theme.accent)
                         .padding(.horizontal, 7)
                         .padding(.vertical, 3)

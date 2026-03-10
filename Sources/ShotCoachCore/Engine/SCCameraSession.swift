@@ -93,10 +93,65 @@ public final class SCCameraSession: NSObject {
     /// Current flash mode applied when `capturePhoto()` is called. Defaults to `.auto`.
     public var flashMode: SCFlashMode = .auto
 
+    /// True when this device has a physical ultra-wide camera (iPhone 11+).
+    /// Use this to conditionally show a lens-toggle control.
+    public var isUltraWideAvailable: Bool {
+#if os(iOS)
+        AVCaptureDevice.default(.builtInUltraWideCamera, for: .video, position: .back) != nil
+#else
+        false
+#endif
+    }
+
+    /// Switches the active capture lens.
+    /// - Parameter completion: Called on the main queue with `true` on success, `false`
+    ///   if the device is unavailable or the session cannot accept the new input.
+    ///   The caller should roll back any UI state on `false`.
+    public func switchLens(_ mode: SCLensMode, completion: ((Bool) -> Void)? = nil) {
+#if os(iOS)
+        captureQueue.async { [weak self] in
+            guard let self else {
+                DispatchQueue.main.async { completion?(false) }
+                return
+            }
+            // Skip if already on the requested lens — also prevents queued rapid-tap
+            // blocks from re-entering beginConfiguration after the first switch settles.
+            if self.captureDevice?.deviceType == mode.avDeviceType {
+                DispatchQueue.main.async { completion?(true) }
+                return
+            }
+            guard let device = AVCaptureDevice.default(mode.avDeviceType, for: .video, position: .back),
+                  let newInput = try? AVCaptureDeviceInput(device: device) else {
+                DispatchQueue.main.async { completion?(false) }
+                return
+            }
+            self.session.beginConfiguration()
+            self.session.inputs
+                .compactMap { $0 as? AVCaptureDeviceInput }
+                .filter { $0.device.hasMediaType(.video) }
+                .forEach { self.session.removeInput($0) }
+            guard self.session.canAddInput(newInput) else {
+                self.session.commitConfiguration()
+                DispatchQueue.main.async { completion?(false) }
+                return
+            }
+            self.session.addInput(newInput)
+            self.session.commitConfiguration()
+            // Update captureDevice so zoom/focus/flash calls address the correct lens.
+            self.captureDevice = device
+            DispatchQueue.main.async { completion?(true) }
+        }
+#else
+        completion?(false)
+#endif
+    }
+
     /// Maximum optical zoom factor available on this device (capped at 10×).
+    /// Read without queue sync — a stale value only affects the display clamp, not the
+    /// hardware clamp (SCCameraSession.setZoom recalculates independently on captureQueue).
     public var maxZoomFactor: CGFloat {
 #if os(iOS)
-        min(captureDevice?.maxAvailableVideoZoomFactor ?? 1.0, 10.0)
+        min(captureDevice?.maxAvailableVideoZoomFactor ?? 10.0, 10.0)
 #else
         1.0
 #endif
@@ -229,6 +284,19 @@ extension SCCameraSession: AVCaptureVideoDataOutputSampleBufferDelegate {
         }
     }
 }
+
+// MARK: - SCLensMode → AVCaptureDevice.DeviceType
+
+#if os(iOS)
+fileprivate extension SCLensMode {
+    var avDeviceType: AVCaptureDevice.DeviceType {
+        switch self {
+        case .main:      return .builtInWideAngleCamera
+        case .ultraWide: return .builtInUltraWideCamera
+        }
+    }
+}
+#endif
 
 // MARK: - SCFlashMode → AVCaptureDevice.FlashMode
 

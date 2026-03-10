@@ -31,13 +31,29 @@ public final class ShotCoach: ObservableObject {
     /// Current zoom factor reflected from the camera device. Updated by `setZoom(_:)`.
     @Published public private(set) var zoomFactor: CGFloat = 1.0
 
+    /// Apparent zoom spanning both lenses.
+    /// - `0.5` = ultra-wide at its native 1× (half the field of view of the main lens).
+    /// - `1.0` = main lens at 1×.
+    /// - `>1.0` = main lens with digital/optical zoom.
+    public var virtualZoomFactor: CGFloat {
+        lensMode == .ultraWide ? 0.5 : zoomFactor
+    }
+
     /// Current flash mode applied at capture time. Cycled by `cycleFlash()`.
     @Published public private(set) var flashMode: SCFlashMode = .auto
+
+    /// The active camera lens. Toggled by `cycleLens()` / `switchLens(_:)`.
+    /// Always `.main` on devices without an ultra-wide camera.
+    @Published public private(set) var lensMode: SCLensMode = .main
 
     // MARK: - Public read-only
 
     /// The category driving this session.
     public let category: any SCCategoryConfig
+
+    /// True when the device has a physical ultra-wide camera (iPhone 11+).
+    /// Observe this before showing a lens-toggle control.
+    public var isUltraWideAvailable: Bool { cameraSession.isUltraWideAvailable }
 
     /// The underlying `AVCaptureSession` — consumed by `AVCapturePreviewView`.
     /// Intended for custom preview-layer integrations; consumers using `SCCameraGuidanceView`
@@ -102,6 +118,58 @@ public final class ShotCoach: ObservableObject {
         zoomFactor = max(1.0, min(cameraSession.maxZoomFactor, factor))
     }
 
+    /// Sets zoom across both lenses using a unified virtual scale:
+    /// - Any value `< 1.0` → ultra-wide lens at its native 1× (all map to the same FOV)
+    /// - `1.0` → main lens at 1×
+    /// - `> 1.0` → main lens with optical/digital zoom
+    ///
+    /// Automatically switches lenses when crossing the 1× boundary.
+    /// No-op when ultra-wide is unavailable and factor < 1.
+    public func setVirtualZoom(_ factor: CGFloat) {
+        if factor < 1.0 {
+            guard isUltraWideAvailable else { return }
+            if lensMode != .ultraWide { switchLens(.ultraWide) }
+            // Ultra-wide always stays at 1× hardware zoom; the 0.5× label is its native FOV.
+        } else {
+            if lensMode != .main { switchLens(.main) }
+            // Always call setZoom even while isSwitchingLens — captureQueue is serial, so
+            // the setZoom block runs after the switchLens block and targets the correct device.
+            // Updating zoomFactor synchronously here avoids a visible stall in the zoom label.
+            setZoom(factor)
+        }
+    }
+
+    /// Switches the active lens. No-op when `isUltraWideAvailable` is `false` or a
+    /// switch is already in flight (prevents rapid-pinch from stacking capture-queue blocks).
+    /// Resets zoom to 1× — optical zoom ranges differ between lenses.
+    /// Published state is updated optimistically; rolls back if the hardware switch fails.
+    public func switchLens(_ mode: SCLensMode) {
+        guard mode == .main || isUltraWideAvailable else { return }
+        guard !isSwitchingLens else { return }
+        let previousMode = lensMode
+        let previousZoom = zoomFactor
+        isSwitchingLens = true
+        lensMode   = mode
+        zoomFactor = 1.0
+        cameraSession.switchLens(mode) { [weak self] success in
+            // Delivered on DispatchQueue.main (see SCCameraSession.switchLens).
+            // Explicit Task @MainActor ensures forward-compatibility with Swift 6 strict concurrency.
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.isSwitchingLens = false
+                if !success {
+                    self.lensMode   = previousMode
+                    self.zoomFactor = previousZoom
+                }
+            }
+        }
+    }
+
+    /// Toggles between `.main` and `.ultraWide`. No-op on devices without ultra-wide.
+    public func cycleLens() {
+        switchLens(lensMode == .main ? .ultraWide : .main)
+    }
+
     /// Cycles flash mode: off → auto → on → off.
     public func cycleFlash() {
         let all = SCFlashMode.allCases
@@ -134,6 +202,9 @@ public final class ShotCoach: ObservableObject {
 
     private let cloudProvider: any SCCloudProvider
     private let cameraSession: SCCameraSession
+    /// True while a hardware lens swap is in flight on captureQueue.
+    /// Prevents stacking multiple `beginConfiguration` blocks from rapid pinch events.
+    private var isSwitchingLens = false
 
     private func advanceShot() {
         guard let current = currentShot,

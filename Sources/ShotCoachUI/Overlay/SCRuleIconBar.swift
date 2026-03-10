@@ -84,7 +84,7 @@ public struct SCRuleIconBar: View {
             // Instagrammability rule: show numeric score when available, else fall back to label.
             let label: String
             if (id == "sc.aesthetic" || id == "sc.instagrammability"), let score = r.numericScore {
-                label = String(format: "%.1f", score)
+                label = score.formatted(.number.precision(.fractionLength(1)))
             } else {
                 label = defaultLabel
             }
@@ -112,10 +112,10 @@ public struct SCRuleIconBar: View {
     private func iconCell(entry: Entry) -> some View {
         VStack(spacing: 4) {
             Image(systemName: entry.icon)
-                .font(.system(size: 20, weight: .regular))
+                .font(.title3.weight(.regular))
                 .foregroundStyle(entry.color)
             Text(entry.label)
-                .font(.system(size: 9, weight: .semibold))
+                .font(.caption2.weight(.semibold))
                 .foregroundStyle(entry.color)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
