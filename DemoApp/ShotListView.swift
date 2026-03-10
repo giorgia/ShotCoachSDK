@@ -162,26 +162,14 @@ struct ShotListView: View {
         cloudResults = [:]
         var firstError: String?
         let provider = SCOpenAIProvider(apiKey: key)
-        await withTaskGroup(of: (String, SCCloudResult?, String?).self) { group in
-            for entry in entries {
-                guard let photo = entry.capturedPhoto else { continue }
-                let prompt = info.category.cloudPrompt(for: entry.shot)
-                let entryID = entry.id
-                group.addTask {
-                    do {
-                        let result = try await provider.analyze(photo: photo, prompt: prompt)
-                        return (entryID, result, nil)
-                    } catch {
-                        return (entryID, nil, error.localizedDescription)
-                    }
-                }
-            }
-            for await (id, result, error) in group {
-                if let result {
-                    cloudResults[id] = result
-                } else if firstError == nil {
-                    firstError = error
-                }
+        // Sequential — parallel requests trigger OpenAI's per-minute rate limit.
+        for entry in entries {
+            guard let photo = entry.capturedPhoto else { continue }
+            let prompt = info.category.cloudPrompt(for: entry.shot)
+            do {
+                cloudResults[entry.id] = try await provider.analyze(photo: photo, prompt: prompt)
+            } catch {
+                if firstError == nil { firstError = error.localizedDescription }
             }
         }
         isAnalyzing = false
