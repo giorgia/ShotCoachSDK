@@ -28,7 +28,7 @@ struct ShotListView: View {
 
     @State private var entries: [ShotEntry]
     @State private var activeShotID: String?
-    @State private var aestheticModel: HomeListingAestheticModel? = try? HomeListingAestheticModel()
+    @State private var aestheticModel: HomeListingAestheticModel?
     @State private var cloudResults: [String: SCCloudResult] = [:]
     @State private var isAnalyzing = false
     @State private var navigateToResults = false
@@ -56,13 +56,15 @@ struct ShotListView: View {
             ScrollView {
                 LazyVGrid(columns: columns, spacing: 12) {
                     ForEach(entries) { entry in
-                        ShotCell(
-                            entry: entry,
-                            isActive: activeShotID == entry.id,
-                            namespace: heroNamespace,
-                            aestheticModel: aestheticModel
-                        )
-                        .onTapGesture { activeShotID = entry.id }
+                        Button { activeShotID = entry.id } label: {
+                            ShotCell(
+                                entry: entry,
+                                isActive: activeShotID == entry.id,
+                                namespace: heroNamespace,
+                                aestheticModel: aestheticModel
+                            )
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
                 .padding(16)
@@ -99,6 +101,9 @@ struct ShotListView: View {
                 .transition(.opacity)
                 .zIndex(1)
             }
+        }
+        .task {
+            aestheticModel = try? HomeListingAestheticModel()
         }
         .navigationTitle(info.category.displayName)
         .toolbar(activeShotID != nil ? .hidden : .visible, for: .navigationBar)
@@ -203,8 +208,8 @@ private struct ShotCell: View {
             .overlay(alignment: .topTrailing) {
                 if let score = displayScore {
                     HStack(spacing: 3) {
-                        Image(systemName: "sparkles").font(.system(size: 9, weight: .semibold))
-                        Text(String(format: "%.1f", score)).font(.caption2.weight(.bold))
+                        Image(systemName: "sparkles").font(.caption.weight(.semibold))
+                        Text(score, format: .number.precision(.fractionLength(1))).font(.caption.weight(.bold))
                     }
                     .foregroundStyle(.white)
                     .padding(.horizontal, 7)

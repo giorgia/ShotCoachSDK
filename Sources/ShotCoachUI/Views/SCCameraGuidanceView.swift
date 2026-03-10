@@ -74,10 +74,10 @@ public struct SCCameraGuidanceView: View {
             sdk.stop()
             focusDismissTask?.cancel()
         }
-        .onChange(of: sdk.photos.count) { newCount in
+        .onChange(of: sdk.photos.count, perform: { newCount in
             guard newCount > 0 else { return }
             onResultHandler?(sdk.photos[newCount - 1])
-        }
+        })
     }
 
     // MARK: - Modifiers
@@ -165,13 +165,13 @@ public struct SCCameraGuidanceView: View {
                         zoomAtGestureStart = sdk.virtualZoomFactor
                     }
             )
-            .onChange(of: sdk.lensMode) { _ in
+            .onChange(of: sdk.lensMode, perform: { _ in
                 // Only reset the baseline when no pinch is active. Mid-pinch the
                 // cumulative delta is still relative to zoomAtGestureStart, so
                 // changing it here would cause a sudden jump in zoom level.
                 guard !isPinching else { return }
                 zoomAtGestureStart = sdk.virtualZoomFactor
-            }
+            })
         }
 #endif
     }
@@ -197,14 +197,15 @@ public struct SCCameraGuidanceView: View {
     @ViewBuilder
     private var flashButton: some View {
         if showFlashButton {
-            Button { sdk.cycleFlash() } label: {
-                Image(systemName: sdk.flashMode.symbolName)
-                    .font(.body.weight(.semibold))
-                    .frame(width: 44, height: 44)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Circle())
-                    .foregroundStyle(.white)
+            Button("Cycle flash", systemImage: sdk.flashMode.symbolName) {
+                sdk.cycleFlash()
             }
+            .labelStyle(.iconOnly)
+            .font(.body.weight(.semibold))
+            .frame(width: 44, height: 44)
+            .background(.ultraThinMaterial)
+            .clipShape(Circle())
+            .foregroundStyle(.white)
         } else {
             Color.clear.frame(width: 44, height: 44)
         }
@@ -258,14 +259,15 @@ public struct SCCameraGuidanceView: View {
                     .background(.ultraThinMaterial)
                     .clipShape(Circle())
             }
-            .onChange(of: pickerItem) { item in
+            .accessibilityLabel("Choose from library")
+            .onChange(of: pickerItem, perform: { item in
                 Task {
                     if let data = try? await item?.loadTransferable(type: Data.self) {
                         await sdk.analyzePhoto(imageData: data)
                     }
                     pickerItem = nil
                 }
-            }
+            })
         } else {
             Color.clear.frame(width: 44, height: 44)
         }
@@ -283,7 +285,7 @@ private struct ZoomPill: View {
     var body: some View {
         Button(action: action) {
             Text(label)
-                .font(.system(size: 13, weight: .semibold).monospacedDigit())
+                .font(.caption.weight(.semibold).monospacedDigit())
                 .foregroundStyle(active ? .black : .white)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)

@@ -92,8 +92,10 @@ struct CategoryPickerView: View {
         ScrollView {
             LazyVGrid(columns: columns, spacing: 14) {
                 ForEach(CategoryInfo.all) { info in
-                    CategoryCard(info: info)
-                        .onTapGesture { activeCategory = info }
+                    Button { activeCategory = info } label: {
+                        CategoryCard(info: info)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
             .padding(20)
@@ -106,10 +108,14 @@ struct CategoryPickerView: View {
         }
         .toolbar {
             ToolbarItem(placement: .automatic) {
-                Button { showKeySetup = true } label: {
-                    Image(systemName: hasAPIKey ? "key.fill" : "key")
-                        .foregroundStyle(hasAPIKey ? Color.green : Color.secondary)
+                Button(
+                    hasAPIKey ? "Update API key" : "Add API key",
+                    systemImage: hasAPIKey ? "key.fill" : "key"
+                ) {
+                    showKeySetup = true
                 }
+                .labelStyle(.iconOnly)
+                .foregroundStyle(hasAPIKey ? Color.green : Color.secondary)
                 .help(hasAPIKey ? "API key configured — tap to update" : "Add OpenAI API key")
             }
         }
@@ -173,9 +179,9 @@ private struct CategoryCard: View {
         .frame(minHeight: 148)
         .background(Color(white: 0.10))
         .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(
+        .overlay {
             RoundedRectangle(cornerRadius: 16)
                 .stroke(displayAccent.opacity(0.30), lineWidth: 1)
-        )
+        }
     }
 }

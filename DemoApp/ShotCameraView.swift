@@ -102,7 +102,7 @@ struct ShotCameraView: View {
         let v = sdk.virtualZoomFactor
         let text = v < 1.0
             ? "0.5×"
-            : (v == 1.0 ? "1×" : String(format: "%.1f×", v))
+            : (v == 1.0 ? "1×" : "\(Double(v).formatted(.number.precision(.fractionLength(1))))×")
         return Text(text)
             .font(.system(size: 14, weight: .semibold).monospacedDigit())
             .foregroundStyle(.white)
@@ -114,16 +114,19 @@ struct ShotCameraView: View {
 
     @ViewBuilder
     private func freezeFrame(photo: SCPhoto) -> some View {
-        let base: AnyView = UIImage(data: photo.imageData).map {
-            AnyView(Image(uiImage: $0).resizable().scaledToFill())
-        } ?? AnyView(Color.black)
-        base
-            .ignoresSafeArea()
-            .matchedGeometryEffect(
-                id: "photo_\(shot.id)",
-                in: heroNamespace,
-                isSource: true
-            )
+        Group {
+            if let img = UIImage(data: photo.imageData) {
+                Image(uiImage: img).resizable().scaledToFill()
+            } else {
+                Color.black
+            }
+        }
+        .ignoresSafeArea()
+        .matchedGeometryEffect(
+            id: "photo_\(shot.id)",
+            in: heroNamespace,
+            isSource: true
+        )
     }
 
     private var cameraChrome: some View {
