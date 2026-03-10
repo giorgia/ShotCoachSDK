@@ -110,17 +110,17 @@ struct ShotListView: View {
         .toolbar(activeShotID != nil ? .hidden : .visible, for: .navigationBar)
         .background(Color(white: 0.05).ignoresSafeArea())
         .toolbar {
-            if entries.allSatisfy({ $0.capturedPhoto != nil }) {
+            if entries.contains(where: { $0.capturedPhoto != nil }) {
                 ToolbarItem(placement: .primaryAction) {
                     if isAnalyzing {
                         ProgressView()
                     } else {
                         Button("Send to AI") {
-                            if SCKeychainService.load(key: "openai_api_key") == nil {
+                            let hasKey = SCKeychainService.load(key: "openai_api_key") != nil
+                                      || SCKeychainService.load(key: "anthropic_api_key") != nil
+                            if !hasKey {
                                 showKeySetup = true
                             } else {
-                                // Set isAnalyzing synchronously before the Task suspends
-                                // to prevent a double-tap from launching two analyses.
                                 isAnalyzing = true
                                 Task { await runBatchAnalysis() }
                             }
@@ -148,20 +148,32 @@ struct ShotListView: View {
 
     // MARK: - Batch analysis
 
+    @AppStorage("preferred_provider") private var preferredProvider: String = "anthropic"
+
     @MainActor
     private func runBatchAnalysis() async {
-        let key = SCKeychainService.load(key: "openai_api_key") ?? ""
-        guard !key.isEmpty else {
+        // Pick provider based on preference, falling back to whichever key is available.
+        let provider: any SCCloudProvider
+        let anthropicKey = SCKeychainService.load(key: "anthropic_api_key") ?? ""
+        let openAIKey    = SCKeychainService.load(key: "openai_api_key")    ?? ""
+
+        if preferredProvider == "anthropic" && !anthropicKey.isEmpty {
+            provider = SCAnthropicProvider(apiKey: anthropicKey)
+        } else if !openAIKey.isEmpty {
+            provider = SCOpenAIProvider(apiKey: openAIKey)
+        } else if !anthropicKey.isEmpty {
+            provider = SCAnthropicProvider(apiKey: anthropicKey)
+        } else {
             isAnalyzing = false
             showKeySetup = true
             return
         }
+
         // isAnalyzing was set synchronously by the caller.
         // Reset state so a retry after navigating back works correctly.
         navigateToResults = false
         cloudResults = [:]
         var firstError: String?
-        let provider = SCOpenAIProvider(apiKey: key)
         // Sequential — parallel requests trigger OpenAI's per-minute rate limit.
         for entry in entries {
             guard let photo = entry.capturedPhoto else { continue }
