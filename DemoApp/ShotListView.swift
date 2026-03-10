@@ -33,6 +33,7 @@ struct ShotListView: View {
     @State private var isAnalyzing = false
     @State private var navigateToResults = false
     @State private var showKeySetup = false
+    @State private var analysisError: String?
 
     @Namespace private var heroNamespace
 
@@ -135,6 +136,14 @@ struct ShotListView: View {
         .sheet(isPresented: $showKeySetup) {
             APIKeySetupView { showKeySetup = false }
         }
+        .alert("Analysis Failed", isPresented: Binding(
+            get: { analysisError != nil },
+            set: { if !$0 { analysisError = nil } }
+        )) {
+            Button("OK") { analysisError = nil }
+        } message: {
+            Text(analysisError ?? "")
+        }
     }
 
     // MARK: - Batch analysis
@@ -142,26 +151,47 @@ struct ShotListView: View {
     @MainActor
     private func runBatchAnalysis() async {
         let key = SCKeychainService.load(key: "openai_api_key") ?? ""
+        guard !key.isEmpty else {
+            isAnalyzing = false
+            showKeySetup = true
+            return
+        }
         // isAnalyzing was set synchronously by the caller.
         // Reset state so a retry after navigating back works correctly.
         navigateToResults = false
         cloudResults = [:]
+        var firstError: String?
         let provider = SCOpenAIProvider(apiKey: key)
-        await withTaskGroup(of: (String, SCCloudResult?).self) { group in
+        await withTaskGroup(of: (String, SCCloudResult?, String?).self) { group in
             for entry in entries {
                 guard let photo = entry.capturedPhoto else { continue }
                 let prompt = info.category.cloudPrompt(for: entry.shot)
                 let entryID = entry.id
                 group.addTask {
-                    return (entryID, try? await provider.analyze(photo: photo, prompt: prompt))
+                    do {
+                        let result = try await provider.analyze(photo: photo, prompt: prompt)
+                        return (entryID, result, nil)
+                    } catch {
+                        return (entryID, nil, error.localizedDescription)
+                    }
                 }
             }
-            for await (id, result) in group {
-                if let result { cloudResults[id] = result }
+            for await (id, result, error) in group {
+                if let result {
+                    cloudResults[id] = result
+                } else if firstError == nil {
+                    firstError = error
+                }
             }
         }
         isAnalyzing = false
-        navigateToResults = true
+        if cloudResults.isEmpty, let error = firstError {
+            // Every call failed — surface the error so the user knows why nothing appeared.
+            analysisError = error
+        } else {
+            // At least one result (or no errors at all) — navigate to results.
+            navigateToResults = true
+        }
     }
 }
 
