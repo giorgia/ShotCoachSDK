@@ -49,7 +49,7 @@ final class SCInstagrammabilityRuleTests: XCTestCase {
         XCTAssertNotNil(result.numericScore)
         if let score = result.numericScore {
             XCTAssertGreaterThanOrEqual(score, 0.0)
-            XCTAssertLessThanOrEqual(score, 10.0)
+            XCTAssertLessThanOrEqual(score, 100.0)
         }
     }
 
@@ -64,7 +64,7 @@ final class SCInstagrammabilityRuleTests: XCTestCase {
             // Lighting weight is now 0.15; max without lighting contribution = 8.5.
             // Vision may return non-zero saliency for synthetic buffers, so we
             // assert the score is below 8 (lighting penalty must register).
-            XCTAssertLessThan(score, 8.0,
+            XCTAssertLessThan(score, 80.0,
                 "All-black frame should produce a below-peak instagrammability score")
         } else {
             // Graceful fallback — Vision failed on synthetic buffer.
@@ -73,19 +73,19 @@ final class SCInstagrammabilityRuleTests: XCTestCase {
         }
     }
 
-    func test_passingThreshold_defaultIs5() {
+    func test_passingThreshold_defaultIs50() {
         let rule = SCInstagrammabilityRule()
-        XCTAssertEqual(rule.passingThreshold, 5.0)
+        XCTAssertEqual(rule.passingThreshold, 50.0)
     }
 
     func test_customThreshold_isRespected() async {
         // Set a threshold above maximum possible → rule should fail for any real input.
-        let rule = SCInstagrammabilityRule(passingThreshold: 11.0)
+        let rule = SCInstagrammabilityRule(passingThreshold: 110.0)
         let frame = makeFrame(r: 128, g: 128, b: 128)
         let result = await rule.evaluate(frame)
         if let score = result.numericScore {
             XCTAssertFalse(result.passed,
-                "Score \(score) should not pass threshold 11.0")
+                "Score \(score) should not pass threshold 110.0")
         }
         // If Vision fails → graceful pass (unavailable) — also acceptable.
     }

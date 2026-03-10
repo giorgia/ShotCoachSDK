@@ -46,20 +46,20 @@ final class SCAestheticRuleTests: XCTestCase {
     }
 
     func test_passingThreshold_default() {
-        let rule = SCAestheticRule(model: MockAestheticModel(fixedScore: 5.0))
-        XCTAssertEqual(rule.passingThreshold, 5.0)
+        let rule = SCAestheticRule(model: MockAestheticModel(fixedScore: 50.0))
+        XCTAssertEqual(rule.passingThreshold, 50.0)
     }
 
     // MARK: - Pass / fail
 
     func test_scoreAboveThreshold_passes() async {
-        let rule = SCAestheticRule(model: MockAestheticModel(fixedScore: 8.0))
+        let rule = SCAestheticRule(model: MockAestheticModel(fixedScore: 80.0))
         let result = await rule.evaluate(makeFrame())
         XCTAssertTrue(result.passed)
     }
 
     func test_scoreBelowThreshold_fails() async {
-        let rule = SCAestheticRule(model: MockAestheticModel(fixedScore: 2.0))
+        let rule = SCAestheticRule(model: MockAestheticModel(fixedScore: 20.0))
         let result = await rule.evaluate(makeFrame())
         XCTAssertFalse(result.passed)
     }
@@ -71,17 +71,17 @@ final class SCAestheticRuleTests: XCTestCase {
         // With α=0.3 and a neutral start (5.0), the smoothed output must stay
         // well away from both extremes — proving EMA suppresses per-frame jitter.
         let alternatingRule = SCAestheticRule(
-            model: SequenceModel(scores: (0..<20).map { $0.isMultiple(of: 2) ? 0.0 : 10.0 }),
+            model: SequenceModel(scores: (0..<20).map { $0.isMultiple(of: 2) ? 0.0 : 100.0 }),
             smoothingFactor: 0.3
         )
         let frame = makeFrame()
-        var lastScore = 5.0
+        var lastScore = 50.0
         for _ in 0..<20 {
             let res = await alternatingRule.evaluate(frame)
             lastScore = try! XCTUnwrap(res.numericScore)
         }
-        XCTAssertGreaterThan(lastScore, 0.5, "EMA should prevent score reaching 0 floor")
-        XCTAssertLessThan(lastScore, 9.5,    "EMA should prevent score reaching 10 ceiling")
+        XCTAssertGreaterThan(lastScore, 5.0,  "EMA should prevent score reaching 0 floor")
+        XCTAssertLessThan(lastScore, 95.0,    "EMA should prevent score reaching 100 ceiling")
     }
 
     // MARK: - Graceful degradation
@@ -94,7 +94,7 @@ final class SCAestheticRuleTests: XCTestCase {
         let result = await rule.evaluate(makeFrame())
         let score = try! XCTUnwrap(result.numericScore)
         XCTAssertGreaterThanOrEqual(score, 0.0)
-        XCTAssertLessThanOrEqual(score, 10.0)
+        XCTAssertLessThanOrEqual(score, 100.0)
     }
 
     // MARK: - numericScore presence
@@ -138,7 +138,7 @@ private actor SequenceModel: SCAestheticModelProvider {
     }
 
     private func nextScore() -> Double {
-        guard !scores.isEmpty else { return 5.0 }
+        guard !scores.isEmpty else { return 50.0 }
         let s = scores[index % scores.count]
         index += 1
         return s

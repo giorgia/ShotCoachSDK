@@ -26,7 +26,7 @@ public struct SCInstagrammabilityRule: SCFrameRule {
     /// Score threshold in [0, 10] above which the rule is considered passing.
     public let passingThreshold: Double
 
-    public init(passingThreshold: Double = 5.0) {
+    public init(passingThreshold: Double = 50.0) {
         self.passingThreshold = passingThreshold
     }
 
@@ -63,7 +63,7 @@ public struct SCInstagrammabilityRule: SCFrameRule {
                       + balanceScore * 0.25
                       + varietyScore * 0.20
                       + lightScore   * 0.15
-        let score = composite * 10.0
+        let score = composite * 100.0
 
         let label = scoreLabel(score)
         let suggestion = weakestSuggestion(focal: focalScore,
@@ -275,10 +275,10 @@ public struct SCInstagrammabilityRule: SCFrameRule {
 
     private func scoreLabel(_ score: Double) -> String {
         switch score {
-        case 8.0...:  return "Stunning"
-        case 6.5...:  return "Great"
-        case 5.0...:  return "Good"
-        case 3.0...:  return "Needs Work"
+        case 80.0...: return "Stunning"
+        case 65.0...: return "Great"
+        case 50.0...: return "Good"
+        case 30.0...: return "Needs Work"
         default:      return "Poor"
         }
     }

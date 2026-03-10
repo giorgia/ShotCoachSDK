@@ -46,7 +46,7 @@ struct ShotCameraView: View {
                   let model = try? HomeListingAestheticModel() else { return [] }
             // passingThreshold: 7.0 — score must reach 7/10 for the icon to turn
             // green. The default 5.0 made the icon green for any average scene.
-            return [SCAestheticRule(model: model, passingThreshold: 7.0)]
+            return [SCAestheticRule(model: model, passingThreshold: 70.0)]
         }()
         _sdk = StateObject(wrappedValue: ShotCoach(
             category: SingleShotCategory(base: info.category, targetShot: shot,

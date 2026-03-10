@@ -40,14 +40,14 @@ public actor SCAestheticRule: SCFrameRule {
 
     // MARK: - Mutable actor-isolated state
 
-    /// Current exponentially smoothed score. Starts at 5.0 (neutral midpoint).
-    private var smoothedScore: Double = 5.0
+    /// Current exponentially smoothed score. Starts at 50.0 (neutral midpoint of 0–100).
+    private var smoothedScore: Double = 50.0
 
     // MARK: - Init
 
     public init(
         model: any SCAestheticModelProvider,
-        passingThreshold: Double = 5.0,
+        passingThreshold: Double = 50.0,
         smoothingFactor: Double = 0.3
     ) {
         precondition(smoothingFactor > 0 && smoothingFactor <= 1,
@@ -65,14 +65,14 @@ public actor SCAestheticRule: SCFrameRule {
         let previousSmoothed = smoothedScore
 
         // Heuristic baseline — runs regardless of model availability.
-        let heuristicScore = await SCInstagrammabilityRule().evaluate(frame).numericScore ?? 5.0
+        let heuristicScore = await SCInstagrammabilityRule().evaluate(frame).numericScore ?? 50.0
 
         // Blend: 70 % CoreML + 30 % heuristic.
         // On model throw, fall back to 100 % heuristic so the score stays meaningful.
         let blended: Double
         do {
             let raw = try await model.score(frame.pixelBuffer)
-            let clamped = max(0.0, min(10.0, raw))
+            let clamped = max(0.0, min(100.0, raw))
             blended = 0.7 * clamped + 0.3 * heuristicScore
         } catch {
             blended = heuristicScore
@@ -97,11 +97,11 @@ public actor SCAestheticRule: SCFrameRule {
 
     private func scoreLabel(_ score: Double) -> String {
         switch score {
-        case 8.0...: return "Stunning"
-        case 6.5...: return "Great"
-        case 5.0...: return "Good"
-        case 3.0...: return "Needs Work"
-        default:     return "Poor"
+        case 80.0...: return "Stunning"
+        case 65.0...: return "Great"
+        case 50.0...: return "Good"
+        case 30.0...: return "Needs Work"
+        default:      return "Poor"
         }
     }
 }

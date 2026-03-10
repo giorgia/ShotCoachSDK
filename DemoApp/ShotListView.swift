@@ -244,7 +244,7 @@ private struct ShotCell: View {
                     .foregroundStyle(.white)
                     .padding(.horizontal, 7)
                     .padding(.vertical, 4)
-                    .background(score >= 8 ? Color.green : score >= 5 ? Color.orange : Color.red)
+                    .background(score >= 80 ? Color.green : score >= 50 ? Color.orange : Color.red)
                     .clipShape(Capsule())
                     .padding(6)
                 }
