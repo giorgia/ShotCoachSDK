@@ -79,6 +79,7 @@ struct ShotListView: View {
                     info: info,
                     shot: entries[entryIdx].shot,
                     heroNamespace: heroNamespace,
+                    aestheticModel: aestheticModel,
                     onCapture: { photo in
                         // Decode the JPEG off the main thread so the image is ready on
                         // the first animation frame — avoids the gray-box flash.

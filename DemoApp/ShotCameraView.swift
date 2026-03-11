@@ -26,10 +26,15 @@ struct ShotCameraView: View {
     @StateObject private var sdk: ShotCoach
     @State private var capturedImage: SCPhoto?
 
+    /// - Parameter aestheticModel: Pre-loaded model from the parent view. Pass `nil`
+    ///   to disable the aesthetic rule (e.g. while the model is still loading).
+    ///   Loading the model synchronously in `init` would block the main thread during
+    ///   CoreML compilation; the parent loads it via `.task` instead.
     init(
         info: CategoryInfo,
         shot: SCShotType,
         heroNamespace: Namespace.ID,
+        aestheticModel: HomeListingAestheticModel?,
         onCapture: @escaping (SCPhoto) -> Void,
         onDismiss: @escaping () -> Void
     ) {
@@ -38,14 +43,9 @@ struct ShotCameraView: View {
         self.heroNamespace = heroNamespace
         self.onCapture    = onCapture
         self.onDismiss    = onDismiss
-        // Inject an aesthetic rule for Home Listing if the model loads successfully.
-        // `try?` means a missing bundle resource silently disables the rule — all other
-        // rules still run normally, so the camera session is never blocked.
         let aestheticRules: [any SCFrameRule] = {
             guard info.category == .homeListing,
-                  let model = try? HomeListingAestheticModel() else { return [] }
-            // passingThreshold: 7.0 — score must reach 7/10 for the icon to turn
-            // green. The default 5.0 made the icon green for any average scene.
+                  let model = aestheticModel else { return [] }
             return [SCAestheticRule(model: model, passingThreshold: 70.0)]
         }()
         _sdk = StateObject(wrappedValue: ShotCoach(
