@@ -32,6 +32,7 @@ struct ShotListView: View {
     @State private var cloudResults: [String: SCCloudResult] = [:]
     @State private var isAnalyzing = false
     @State private var navigateToResults = false
+    @State private var partialError: String?
     @State private var showKeySetup = false
     @State private var analysisError: String?
 
@@ -131,7 +132,8 @@ struct ShotListView: View {
             }
         }
         .navigationDestination(isPresented: $navigateToResults) {
-            SessionResultsView(entries: entries, cloudResults: cloudResults, info: info)
+            SessionResultsView(entries: entries, cloudResults: cloudResults, info: info,
+                               partialError: partialError)
         }
         .sheet(isPresented: $showKeySetup) {
             APIKeySetupView { showKeySetup = false }
@@ -173,6 +175,7 @@ struct ShotListView: View {
         // Reset state so a retry after navigating back works correctly.
         navigateToResults = false
         cloudResults = [:]
+        partialError = nil
         var firstError: String?
         // Sequential — parallel requests trigger OpenAI's per-minute rate limit.
         for entry in entries {
@@ -189,7 +192,11 @@ struct ShotListView: View {
             // Every call failed — surface the error so the user knows why nothing appeared.
             analysisError = error
         } else {
-            // At least one result (or no errors at all) — navigate to results.
+            // At least one result — navigate to results.
+            // If some shots failed, surface a non-blocking warning in the results screen.
+            if firstError != nil {
+                partialError = firstError
+            }
             navigateToResults = true
         }
     }

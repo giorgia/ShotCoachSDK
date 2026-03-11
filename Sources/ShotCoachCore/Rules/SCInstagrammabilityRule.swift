@@ -2,7 +2,7 @@ import Foundation
 import Vision
 import CoreVideo
 
-/// Scores frames on a 0–10 instagrammability scale using a single
+/// Scores frames on a 0–100 instagrammability scale using a single
 /// `VNGenerateAttentionBasedSaliencyImageRequest` and four weighted dimensions:
 ///
 /// | Dimension            | Weight | Signal                                           |
@@ -23,7 +23,7 @@ public struct SCInstagrammabilityRule: SCFrameRule {
     public var severity: SCRuleSeverity { .warning }
     public var feedbackMessage: String { "Improve composition" }
 
-    /// Score threshold in [0, 10] above which the rule is considered passing.
+    /// Score threshold in [0, 100] above which the rule is considered passing.
     public let passingThreshold: Double
 
     public init(passingThreshold: Double = 50.0) {
@@ -55,7 +55,7 @@ public struct SCInstagrammabilityRule: SCFrameRule {
         let varietyScore = visualVarietyScore(observation: observation)
         let lightScore   = lightingScore(pixelBuffer: frame.pixelBuffer)
 
-        // Weighted composite → [0, 10].
+        // Weighted composite → [0, 1], then scaled to [0, 100].
         // Weights: focal clarity carries more weight (composition matters most for
         // real-estate instagrammability); lighting is reduced because indoor rooms
         // almost always fall in an acceptable luma range, making it a near-free score.

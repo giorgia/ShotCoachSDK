@@ -47,7 +47,10 @@ final class HomeListingAestheticModel: SCAestheticModelProvider {
         clipModel = try MLModel(contentsOf: clipURL, configuration: config)
         headModel = try MLModel(contentsOf: headURL, configuration: config)
 
-        // Read actual feature names from the compiled models — avoids hardcoding.
+        // Read feature names from the compiled models at init time.
+        // Both MobileClip S0 and HomeHead S0 are single-input/single-output models,
+        // so `.keys.first` is deterministic. The fallback literals match the known
+        // feature names and guard against an unexpected empty description dictionary.
         clipInputName  = clipModel.modelDescription.inputDescriptionsByName.keys.first  ?? "image"
         clipOutputName = clipModel.modelDescription.outputDescriptionsByName.keys.first ?? "embedding"
         headInputName  = headModel.modelDescription.inputDescriptionsByName.keys.first  ?? "embedding"

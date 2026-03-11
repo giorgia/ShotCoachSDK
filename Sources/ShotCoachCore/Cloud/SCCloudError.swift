@@ -24,13 +24,13 @@ extension SCCloudError: LocalizedError {
         case .notConfigured:
             return "No cloud provider configured."
         case .invalidAPIKey:
-            return "Invalid API key — check your OpenAI key in Settings."
+            return "Invalid API key — check your key in Settings."
         case .rateLimited:
-            return "OpenAI rate limit reached. Wait a moment and try again."
+            return "Rate limit reached. Wait a moment and try again."
         case .networkFailure(let detail):
             return "Network error: \(detail)"
         case .invalidResponse:
-            return "Unexpected response from OpenAI."
+            return "Unexpected response from the AI provider."
         case .jsonParsingFailed(let detail):
             return "Could not parse AI response: \(detail)"
         case .imageTooLarge:

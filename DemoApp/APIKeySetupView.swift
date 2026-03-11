@@ -101,7 +101,7 @@ struct APIKeySetupView: View {
                     .onChange(of: openAIInput, perform: { _ in showOpenAIError = false })
 
                 if showOpenAIError {
-                    Label("Key must start with \"sk-\"", systemImage: "exclamationmark.circle.fill")
+                    Label("Key must start with \"sk-\" (not \"sk-ant-\")", systemImage: "exclamationmark.circle.fill")
                         .font(.caption)
                         .foregroundStyle(.red)
                 }
@@ -150,7 +150,9 @@ struct APIKeySetupView: View {
 
         let trimmedOpenAI = openAIInput.trimmingCharacters(in: .whitespaces)
         if !trimmedOpenAI.isEmpty {
-            if trimmedOpenAI.hasPrefix("sk-") {
+            // Accept "sk-" prefix but explicitly reject Anthropic keys (sk-ant-…)
+            // which also start with "sk-" and would cause a confusing 401 at runtime.
+            if trimmedOpenAI.hasPrefix("sk-") && !trimmedOpenAI.hasPrefix("sk-ant-") {
                 SCKeychainService.save(key: "openai_api_key", value: trimmedOpenAI)
                 showOpenAIError = false
             } else {

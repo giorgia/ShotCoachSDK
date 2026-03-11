@@ -215,7 +215,7 @@ public struct SCOpenAIProvider: SCCloudProvider, Sendable {
         guard let dest = CGImageDestinationCreateWithData(
             output as CFMutableData, "public.jpeg" as CFString, 1, nil
         ) else {
-            throw SCCloudError.imageTooLarge
+            throw SCCloudError.invalidResponse
         }
 
         CGImageDestinationAddImage(
@@ -223,7 +223,7 @@ public struct SCOpenAIProvider: SCCloudProvider, Sendable {
             [kCGImageDestinationLossyCompressionQuality: 0.7] as CFDictionary
         )
         guard CGImageDestinationFinalize(dest) else {
-            throw SCCloudError.imageTooLarge
+            throw SCCloudError.invalidResponse
         }
         return output as Data
     }

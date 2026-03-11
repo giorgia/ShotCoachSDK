@@ -210,13 +210,13 @@ public struct SCAnthropicProvider: SCCloudProvider, Sendable {
         guard let dest = CGImageDestinationCreateWithData(
             output as CFMutableData, "public.jpeg" as CFString, 1, nil
         ) else {
-            throw SCCloudError.imageTooLarge
+            throw SCCloudError.invalidResponse
         }
         CGImageDestinationAddImage(
             dest, scaled,
             [kCGImageDestinationLossyCompressionQuality: 0.7] as CFDictionary
         )
-        guard CGImageDestinationFinalize(dest) else { throw SCCloudError.imageTooLarge }
+        guard CGImageDestinationFinalize(dest) else { throw SCCloudError.invalidResponse }
         return output as Data
     }
 
