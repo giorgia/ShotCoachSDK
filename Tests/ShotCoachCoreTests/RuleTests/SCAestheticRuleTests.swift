@@ -133,7 +133,8 @@ final class SCAestheticRuleTests: XCTestCase {
 
     // MARK: - Performance
 
-    func test_performance() async {
+    func test_performance() async throws {
+        try XCTSkipIf(ProcessInfo.processInfo.environment["CI"] != nil, "Performance tests skipped in CI")
         // Mock model returns instantly. 20 iterations must average < 80ms each.
         let rule = SCAestheticRule(model: MockAestheticModel(fixedScore: 7.0))
         let frame = makeFrame()
