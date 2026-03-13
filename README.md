@@ -90,6 +90,93 @@ ShotCoach(category: WatchListingConfig(), apiKey: key)
 
 ---
 
+## CoreML Aesthetic Model
+
+ShotCoach includes `SCAestheticRule` — a live-frame aesthetic scorer that blends a **CoreML model** with the built-in Vision heuristic.
+
+The SDK ships `Classifiers/home_head_s0.mlpackage` — a pre-trained aesthetic model for home listing photography. For other categories you supply your own `.mlpackage`.
+
+### How the scoring pipeline works
+
+```
+CVPixelBuffer (live frame)
+        │
+        ├──▶ CoreML model (.mlpackage)        → raw score 0–100   (70 % weight)
+        │
+        └──▶ SCInstagrammabilityRule (Vision) → heuristic score   (30 % weight)
+                        │
+                        ▼
+               blended score 0–100
+                        │
+                        ▼
+               EMA smoothing (α = 0.3)    ← suppresses per-frame jitter
+                        │
+                        ▼
+               SCRuleResult { passed, numericScore, message }
+```
+
+If the CoreML model throws (e.g. unsupported buffer format), the rule falls back to 100% heuristic score — no crash, no silent failure.
+
+### Using the bundled home listing model
+
+**Step 1 — Add `home_head_s0.mlpackage` to your Xcode app target.**
+
+Drag `MLModels/home_head_s0.mlpackage` from the SDK into your Xcode project and tick your app target. Xcode auto-generates the `home_head_s0` Swift class.
+
+**Step 2 — Write a thin `SCAestheticModelProvider` conformance:**
+
+```swift
+import CoreML
+import CoreVideo
+import ShotCoachCore
+
+final class HomeListingAestheticModel: SCAestheticModelProvider {
+    private let model = try! home_head_s0(configuration: MLModelConfiguration())
+
+    func score(_ pixelBuffer: CVPixelBuffer) async throws -> Double {
+        let input = home_head_s0Input(image: pixelBuffer)
+        let output = try await model.prediction(input: input)
+        return output.aestheticScore * 100  // normalise to 0–100
+    }
+}
+```
+
+**Step 3 — Inject it via `.extending`:**
+
+```swift
+ShotCoach(category: SCBuiltInCategory.homeListing.extending {
+    $0.appendRule(SCAestheticRule(model: HomeListingAestheticModel()))
+}, apiKey: key)
+```
+
+### Using a custom model for other categories
+
+For categories without a bundled model, train your own `.mlpackage` and conform to `SCAestheticModelProvider` the same way. The interface is a single method:
+
+```swift
+public protocol SCAestheticModelProvider: Sendable {
+    func score(_ pixelBuffer: CVPixelBuffer) async throws -> Double
+    // Return a value in [0, 100]. Throw on inference failure.
+}
+```
+
+### Tuning
+
+| Parameter | Default | Effect |
+|---|---|---|
+| `passingThreshold` | `50.0` | Minimum smoothed score (0–100) to pass |
+| `smoothingFactor` (α) | `0.3` | EMA responsiveness — lower = smoother, higher = more reactive |
+
+```swift
+SCAestheticRule(
+    model: HomeListingAestheticModel(),
+    passingThreshold: 60.0,   // stricter pass bar
+    smoothingFactor: 0.2      // smoother feedback
+)
+```
+
+---
+
 ## Architecture
 
 ```
