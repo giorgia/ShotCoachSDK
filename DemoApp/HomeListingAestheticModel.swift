@@ -12,9 +12,8 @@ import ShotCoachCore
 ///   2. **HomeHead S0** (`home_head_s0`) — maps the embedding to a sigmoid
 ///      probability in [0, 1] (output feature: `var_5`), scaled to [0, 10].
 ///
-/// Both `.mlpackage` files must be added to the app target's bundle by the developer
-/// (drag into Xcode → target membership = ShotCoachDemo). The SDK itself ships no
-/// CoreML weights — this class is the bridge.
+/// Both `.mlpackage` files live in the SDK's `MLModels/` directory and must be added
+/// to the app target's bundle (drag into Xcode → target membership = ShotCoachDemo).
 final class HomeListingAestheticModel: SCAestheticModelProvider {
 
     // MARK: - Stored
@@ -39,9 +38,9 @@ final class HomeListingAestheticModel: SCAestheticModelProvider {
 
         guard
             let clipURL = Bundle.main.url(forResource: "mobileclip_s0_image", withExtension: "mlmodelc")
-                       ?? Bundle.main.url(forResource: "mobileclip_s0_image", withExtension: "mlmodelc", subdirectory: "Classifiers"),
+                       ?? Bundle.main.url(forResource: "mobileclip_s0_image", withExtension: "mlmodelc", subdirectory: "MLModels"),
             let headURL = Bundle.main.url(forResource: "home_head_s0", withExtension: "mlmodelc")
-                       ?? Bundle.main.url(forResource: "home_head_s0", withExtension: "mlmodelc", subdirectory: "Classifiers")
+                       ?? Bundle.main.url(forResource: "home_head_s0", withExtension: "mlmodelc", subdirectory: "MLModels")
         else { throw LoadError.bundleResourceNotFound }
 
         clipModel = try MLModel(contentsOf: clipURL, configuration: config)
