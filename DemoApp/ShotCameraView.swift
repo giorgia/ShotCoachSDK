@@ -72,7 +72,10 @@ struct ShotCameraView: View {
                     .onResult { photo in
                         capturedImage = photo
                         Task {
-                            try? await Task.sleep(for: .milliseconds(150))
+                            // Propagate cancellation — if the task is cancelled (e.g.
+                            // the view disappeared) we must not fire onCapture.
+                            do { try await Task.sleep(for: .milliseconds(150)) }
+                            catch { return }
                             // Guard against the user dismissing during the freeze-frame
                             // window — if capturedImage was cleared, don't propagate.
                             guard capturedImage != nil else { return }

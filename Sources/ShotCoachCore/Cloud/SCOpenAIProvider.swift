@@ -81,7 +81,7 @@ public struct SCOpenAIProvider: SCCloudProvider, Sendable {
         do {
             apiResponse = try JSONDecoder().decode(OpenAIResponse.self, from: data)
         } catch {
-            throw SCCloudError.jsonParsingFailed("Unexpected response format: \(error.localizedDescription)")
+            throw SCCloudError.jsonParsingFailed("Response envelope did not match expected structure")
         }
 
         guard let content = apiResponse.choices.first?.message.content else {

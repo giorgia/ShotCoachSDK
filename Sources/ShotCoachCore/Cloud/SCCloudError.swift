@@ -16,6 +16,8 @@ public enum SCCloudError: Error, Codable, Sendable {
     case jsonParsingFailed(String)
     /// The image data exceeds the provider's size limit after compression.
     case imageTooLarge
+    /// Local image processing failed (decode, resize, or JPEG encoding error).
+    case imageProcessingFailed
 }
 
 extension SCCloudError: LocalizedError {
@@ -35,6 +37,8 @@ extension SCCloudError: LocalizedError {
             return "Could not parse AI response: \(detail)"
         case .imageTooLarge:
             return "Image is too large to send. Try a lower-resolution photo."
+        case .imageProcessingFailed:
+            return "Could not process the image before sending."
         }
     }
 }

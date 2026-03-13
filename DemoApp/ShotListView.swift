@@ -106,7 +106,13 @@ struct ShotListView: View {
             }
         }
         .task {
-            aestheticModel = try? HomeListingAestheticModel()
+            do {
+                aestheticModel = try HomeListingAestheticModel()
+            } catch {
+                // Missing .mlmodelc bundle resource or CoreML compilation failure.
+                // The aesthetic rule is silently disabled — all other rules still run.
+                assertionFailure("HomeListingAestheticModel failed to load: \(error)")
+            }
         }
         .navigationTitle(info.category.displayName)
         .toolbar(activeShotID != nil ? .hidden : .visible, for: .navigationBar)
@@ -185,7 +191,13 @@ struct ShotListView: View {
             do {
                 cloudResults[entry.id] = try await provider.analyze(photo: photo, prompt: prompt)
             } catch {
-                if firstError == nil { firstError = error.localizedDescription }
+                // Prioritise invalidAPIKey — it's always more actionable than a
+                // transient error that arrived earlier in the batch.
+                if let ce = error as? SCCloudError, case .invalidAPIKey = ce {
+                    firstError = ce.localizedDescription
+                } else if firstError == nil {
+                    firstError = error.localizedDescription
+                }
             }
         }
         isAnalyzing = false

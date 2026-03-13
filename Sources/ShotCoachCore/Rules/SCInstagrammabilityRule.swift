@@ -228,6 +228,11 @@ public struct SCInstagrammabilityRule: SCFrameRule {
 
         let fmt = CVPixelBufferGetPixelFormatType(pixelBuffer)
         switch fmt {
+        // kCVPixelFormatType_32BGRA falls into the default branch below.
+        // The default branch assumes BGRA byte order (B=off+0, G=off+1, R=off+2)
+        // which is correct for BGRA buffers delivered by AVFoundation and CVPixelBuffer.
+        // If the buffer is RGBA or ARGB the luminance weights will be applied to the
+        // wrong channels — add an explicit case before `default` if other formats arise.
         case kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange,
              kCVPixelFormatType_420YpCbCr8BiPlanarFullRange:
             guard let yBase = CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, 0) else { return 0.5 }

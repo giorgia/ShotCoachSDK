@@ -6,11 +6,11 @@ import ImageIO
 
 /// Compresses `data` to JPEG quality 0.7, capping the longest side at `maxPx` pixels.
 /// Uses only CoreGraphics + ImageIO — no UIKit or AppKit.
-func scCompressImage(_ data: Data, maxPx: Int) throws -> Data {
+internal func scCompressImage(_ data: Data, maxPx: Int) throws -> Data {
     guard let source = CGImageSourceCreateWithData(data as CFData, nil),
           let cgImage = CGImageSourceCreateImageAtIndex(source, 0, nil)
     else {
-        throw SCCloudError.invalidResponse
+        throw SCCloudError.imageProcessingFailed
     }
 
     let scaled = try scResizeIfNeeded(cgImage, maxPx: maxPx)
@@ -19,17 +19,17 @@ func scCompressImage(_ data: Data, maxPx: Int) throws -> Data {
     guard let dest = CGImageDestinationCreateWithData(
         output as CFMutableData, "public.jpeg" as CFString, 1, nil
     ) else {
-        throw SCCloudError.invalidResponse
+        throw SCCloudError.imageProcessingFailed
     }
     CGImageDestinationAddImage(
         dest, scaled,
         [kCGImageDestinationLossyCompressionQuality: 0.7] as CFDictionary
     )
-    guard CGImageDestinationFinalize(dest) else { throw SCCloudError.invalidResponse }
+    guard CGImageDestinationFinalize(dest) else { throw SCCloudError.imageProcessingFailed }
     return output as Data
 }
 
-func scResizeIfNeeded(_ image: CGImage, maxPx: Int) throws -> CGImage {
+internal func scResizeIfNeeded(_ image: CGImage, maxPx: Int) throws -> CGImage {
     let w = image.width, h = image.height
     guard max(w, h) > maxPx else { return image }
     let scale = Double(maxPx) / Double(max(w, h))
@@ -41,30 +41,33 @@ func scResizeIfNeeded(_ image: CGImage, maxPx: Int) throws -> CGImage {
         bitsPerComponent: 8, bytesPerRow: 0,
         space: colorSpace,
         bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-    ) else { throw SCCloudError.invalidResponse }
+    ) else { throw SCCloudError.imageProcessingFailed }
     ctx.draw(image, in: CGRect(x: 0, y: 0, width: newW, height: newH))
-    guard let resized = ctx.makeImage() else { throw SCCloudError.invalidResponse }
+    guard let resized = ctx.makeImage() else { throw SCCloudError.imageProcessingFailed }
     return resized
 }
 
 // MARK: - Shared networking
 
-/// Executes `request` with exponential back-off retry (1 s, 2 s) on retryable errors.
+/// Executes `request` with exponential back-off retry on retryable errors.
+/// Back-off delays: attempt 0 → 1 s, attempt 1 → 2 s (2^attempt seconds).
 /// `parse` is called on a successful 200 response.
-func scPerformWithRetry(
+internal func scPerformWithRetry(
     _ request: URLRequest,
     parse: (Data) throws -> SCCloudResult
 ) async throws -> SCCloudResult {
+    precondition(scMaxRetryAttempts > 0, "scMaxRetryAttempts must be > 0")
     var lastError: SCCloudError = .networkFailure("No attempts made")
-    let maxAttempts = 3
-    for attempt in 0..<maxAttempts {
+    for attempt in 0..<scMaxRetryAttempts {
         do {
             return try await scPerformRequest(request, parse: parse)
         } catch let e as SCCloudError where scIsRetryable(e) {
             lastError = e
             // Skip sleep after the final attempt.
-            if attempt < maxAttempts - 1 {
-                try await Task.sleep(for: .seconds(pow(2.0, Double(attempt))))
+            if attempt < scMaxRetryAttempts - 1 {
+                // Exponential back-off: 1 s, 2 s, 4 s, … capped at 8 s.
+                let delay = min(pow(2.0, Double(attempt)), 8.0)
+                try await Task.sleep(for: .seconds(delay))
             }
         } catch {
             throw error
@@ -72,6 +75,9 @@ func scPerformWithRetry(
     }
     throw lastError
 }
+
+/// Maximum number of attempts in `scPerformWithRetry`. Internal so tests can inspect.
+internal let scMaxRetryAttempts = 3
 
 private func scIsRetryable(_ error: SCCloudError) -> Bool {
     switch error {
@@ -108,13 +114,13 @@ private func scPerformRequest(
 // MARK: - Shared response parsing
 
 /// The JSON structure both providers expect from the model.
-struct SCParsedCloudResult: Decodable {
-    struct Issue: Decodable {
+internal struct SCParsedCloudResult: Decodable, Sendable {
+    struct Issue: Decodable, Sendable {
         let title: String
         let detail: String
         let impact: SCImpactLevel
     }
-    struct Recommendation: Decodable {
+    struct Recommendation: Decodable, Sendable {
         let text: String
         let priority: Int
     }
@@ -124,13 +130,20 @@ struct SCParsedCloudResult: Decodable {
     let recommendations: [Recommendation]
 }
 
-/// Strips optional markdown code fences and returns UTF-8 encoded JSON data.
-func scExtractJSONData(from content: String) throws -> Data {
-    let stripped = content
-        .trimmingCharacters(in: .whitespacesAndNewlines)
-        .replacingOccurrences(of: "```json", with: "")
-        .replacingOccurrences(of: "```", with: "")
-        .trimmingCharacters(in: .whitespacesAndNewlines)
+/// Strips optional markdown code fences (case-insensitive) and returns UTF-8 JSON data.
+internal func scExtractJSONData(from content: String) throws -> Data {
+    var stripped = content.trimmingCharacters(in: .whitespacesAndNewlines)
+    // Strip ``` json / ```JSON / ``` fences case-insensitively.
+    if let fenceRange = stripped.range(of: "```", options: [.caseInsensitive]) {
+        // Remove everything up to and including the opening fence line.
+        let afterFence = stripped[fenceRange.upperBound...]
+        let lineEnd = afterFence.firstIndex(of: "\n") ?? afterFence.endIndex
+        stripped = String(afterFence[lineEnd...])
+    }
+    if stripped.hasSuffix("```") {
+        stripped = String(stripped.dropLast(3))
+    }
+    stripped = stripped.trimmingCharacters(in: .whitespacesAndNewlines)
     guard let data = stripped.data(using: .utf8) else {
         throw SCCloudError.jsonParsingFailed("Could not encode content as UTF-8")
     }
@@ -138,7 +151,7 @@ func scExtractJSONData(from content: String) throws -> Data {
 }
 
 /// Builds an `SCCloudResult` from the shared parsed structure.
-func scBuildCloudResult(from parsed: SCParsedCloudResult, rawJSON: String) -> SCCloudResult {
+internal func scBuildCloudResult(from parsed: SCParsedCloudResult, rawJSON: String) -> SCCloudResult {
     SCCloudResult(
         score: min(100, max(0, parsed.score)),
         issues: parsed.issues.map { SCIssue(title: $0.title, detail: $0.detail, impact: $0.impact) },

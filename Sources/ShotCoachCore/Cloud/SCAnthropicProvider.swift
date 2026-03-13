@@ -6,10 +6,14 @@ public struct SCAnthropicProvider: SCCloudProvider, Sendable {
 
     private let apiKey: String
 
-    /// - Parameter apiKey: A valid Anthropic API key (starts with `sk-ant-`).
-    ///   Persist it between sessions using `SCKeychainService`; pass the loaded value here.
-    public init(apiKey: String) {
+    /// - Parameters:
+    ///   - apiKey: A valid Anthropic API key (starts with `sk-ant-`).
+    ///     Persist it between sessions using `SCKeychainService`; pass the loaded value here.
+    ///   - model: The Claude model ID to use. Defaults to `claude-sonnet-4-6`.
+    ///     Override to pin a specific version or test with a different tier.
+    public init(apiKey: String, model: String = "claude-sonnet-4-6") {
         self.apiKey = apiKey
+        self.model  = model
     }
 
     // MARK: - SCCloudProvider
@@ -24,8 +28,10 @@ public struct SCAnthropicProvider: SCCloudProvider, Sendable {
     // MARK: - Private — networking
 
     private static let endpoint = URL(string: "https://api.anthropic.com/v1/messages")!
-    private static let model    = "claude-sonnet-4-6"
+    private static let defaultModel = "claude-sonnet-4-6"
     private static let maxImageDimension = 1200
+
+    private let model: String
 
     private static let systemPrompt = """
         You are a professional photography coach AI. Analyze the provided image and \
@@ -40,7 +46,7 @@ public struct SCAnthropicProvider: SCCloudProvider, Sendable {
     private func buildRequest(base64Image: String, prompt: String) throws -> URLRequest {
         // Anthropic vision: image block + text block in the user message.
         let body: [String: Any] = [
-            "model":      Self.model,
+            "model":      model,
             "max_tokens": 1024,
             "system":     Self.systemPrompt,
             "messages": [
@@ -89,7 +95,7 @@ public struct SCAnthropicProvider: SCCloudProvider, Sendable {
         do {
             apiResponse = try JSONDecoder().decode(AnthropicResponse.self, from: data)
         } catch {
-            throw SCCloudError.jsonParsingFailed("Unexpected response format: \(error.localizedDescription)")
+            throw SCCloudError.jsonParsingFailed("Response envelope did not match expected structure")
         }
 
         guard let content = apiResponse.content.first(where: { $0.type == "text" })?.text else {

@@ -15,6 +15,7 @@ struct APIKeySetupView: View {
     @State private var anthropicInput = ""
     @State private var showOpenAIError    = false
     @State private var showAnthropicError = false
+    @State private var showKeychainError  = false
     @FocusState private var focusedField: Field?
 
     private enum Field { case openAI, anthropic }
@@ -134,6 +135,14 @@ struct APIKeySetupView: View {
 
             Spacer().frame(height: 16)
 
+            if showKeychainError {
+                Label("Could not save key — check device Keychain access", systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.red)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+            }
+
             Button("Skip — use local analysis only") { onComplete() }
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -153,7 +162,10 @@ struct APIKeySetupView: View {
             // Accept "sk-" prefix but explicitly reject Anthropic keys (sk-ant-…)
             // which also start with "sk-" and would cause a confusing 401 at runtime.
             if trimmedOpenAI.hasPrefix("sk-") && !trimmedOpenAI.hasPrefix("sk-ant-") {
-                SCKeychainService.save(key: "openai_api_key", value: trimmedOpenAI)
+                if !SCKeychainService.save(key: "openai_api_key", value: trimmedOpenAI) {
+                    showKeychainError = true
+                    valid = false
+                }
                 showOpenAIError = false
             } else {
                 showOpenAIError = true
@@ -164,7 +176,10 @@ struct APIKeySetupView: View {
         let trimmedAnthropic = anthropicInput.trimmingCharacters(in: .whitespaces)
         if !trimmedAnthropic.isEmpty {
             if trimmedAnthropic.hasPrefix("sk-ant-") {
-                SCKeychainService.save(key: "anthropic_api_key", value: trimmedAnthropic)
+                if !SCKeychainService.save(key: "anthropic_api_key", value: trimmedAnthropic) {
+                    showKeychainError = true
+                    valid = false
+                }
                 showAnthropicError = false
             } else {
                 showAnthropicError = true
