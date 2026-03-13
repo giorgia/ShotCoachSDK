@@ -28,10 +28,15 @@ public actor SCAestheticRule: SCFrameRule {
 
     // MARK: - Configuration
 
-    /// Injected CoreML-backed scorer.
-    private let model: any SCAestheticModelProvider
+    /// Injected CoreML-backed scorer. `nonisolated let` so it is accessible from
+    /// the nonisolated `evaluate` path without an actor hop.
+    private nonisolated let model: any SCAestheticModelProvider
 
-    /// Score threshold in [0, 10] above which the rule is considered passing.
+    /// Heuristic baseline used when `model` throws. Stored as a `let` so the
+    /// Vision request infrastructure is created once, not on every frame.
+    private nonisolated let heuristicRule = SCInstagrammabilityRule()
+
+    /// Score threshold in [0, 100] above which the rule is considered passing.
     public nonisolated let passingThreshold: Double
 
     /// EMA smoothing factor α ∈ (0, 1].
@@ -40,14 +45,14 @@ public actor SCAestheticRule: SCFrameRule {
 
     // MARK: - Mutable actor-isolated state
 
-    /// Current exponentially smoothed score. Starts at 5.0 (neutral midpoint).
-    private var smoothedScore: Double = 5.0
+    /// Current exponentially smoothed score. Starts at 50.0 (neutral midpoint of 0–100).
+    private var smoothedScore: Double = 50.0
 
     // MARK: - Init
 
     public init(
         model: any SCAestheticModelProvider,
-        passingThreshold: Double = 5.0,
+        passingThreshold: Double = 50.0,
         smoothingFactor: Double = 0.3
     ) {
         precondition(smoothingFactor > 0 && smoothingFactor <= 1,
@@ -59,49 +64,54 @@ public actor SCAestheticRule: SCFrameRule {
 
     // MARK: - SCFrameRule
 
-    public func evaluate(_ frame: SCFrame) async -> SCRuleResult {
-        // Snapshot actor state before any suspension point so concurrent callers
-        // each work from their own captured value and the final write is coherent.
-        let previousSmoothed = smoothedScore
-
-        // Heuristic baseline — runs regardless of model availability.
-        let heuristicScore = await SCInstagrammabilityRule().evaluate(frame).numericScore ?? 5.0
+    /// Evaluates the frame, blending CoreML and Vision heuristic, then applies EMA.
+    ///
+    /// Heavy async work (model inference + saliency) runs `nonisolated` — outside actor
+    /// isolation — so concurrent callers don't serialise behind each other during inference.
+    /// The EMA state update is a single synchronous actor-isolated call (`applyEMA`) with
+    /// no suspension inside it, making the read-modify-write atomic.
+    public nonisolated func evaluate(_ frame: SCFrame) async -> SCRuleResult {
+        // All async work off-actor so concurrent callers run inference in parallel.
+        let heuristicScore = await heuristicRule.evaluate(frame).numericScore ?? 50.0
 
         // Blend: 70 % CoreML + 30 % heuristic.
         // On model throw, fall back to 100 % heuristic so the score stays meaningful.
         let blended: Double
         do {
             let raw = try await model.score(frame.pixelBuffer)
-            let clamped = max(0.0, min(10.0, raw))
+            let clamped = max(0.0, min(100.0, raw))
             blended = 0.7 * clamped + 0.3 * heuristicScore
         } catch {
             blended = heuristicScore
         }
 
-        // EMA: smoothed = α * blended + (1 − α) * previousSmoothed
-        // Single write after all async work — no partial-update hazard.
-        smoothedScore = smoothingFactor * blended + (1.0 - smoothingFactor) * previousSmoothed
+        // Single synchronous actor hop — no suspension inside, so the EMA update is atomic.
+        return await applyEMA(blended: blended)
+    }
 
+    // MARK: - Helpers
+
+    /// Applies EMA to `smoothedScore` and returns the result.
+    /// This method is synchronous (no `await`) so the read-modify-write is atomic
+    /// within the actor's serial executor — no two callers can interleave here.
+    private func applyEMA(blended: Double) -> SCRuleResult {
+        smoothedScore = smoothingFactor * blended + (1.0 - smoothingFactor) * smoothedScore
         let score = smoothedScore
-        let label = scoreLabel(score)
-
         return SCRuleResult(
             passed: score >= passingThreshold,
-            message: label,
+            message: scoreLabel(score),
             severity: severity,
             numericScore: score
         )
     }
 
-    // MARK: - Helpers
-
-    private func scoreLabel(_ score: Double) -> String {
+    private nonisolated func scoreLabel(_ score: Double) -> String {
         switch score {
-        case 8.0...: return "Stunning"
-        case 6.5...: return "Great"
-        case 5.0...: return "Good"
-        case 3.0...: return "Needs Work"
-        default:     return "Poor"
+        case 80.0...: return "Stunning"
+        case 65.0...: return "Great"
+        case 50.0...: return "Good"
+        case 30.0...: return "Needs Work"
+        default:      return "Poor"
         }
     }
 }

@@ -46,20 +46,20 @@ final class SCAestheticRuleTests: XCTestCase {
     }
 
     func test_passingThreshold_default() {
-        let rule = SCAestheticRule(model: MockAestheticModel(fixedScore: 5.0))
-        XCTAssertEqual(rule.passingThreshold, 5.0)
+        let rule = SCAestheticRule(model: MockAestheticModel(fixedScore: 50.0))
+        XCTAssertEqual(rule.passingThreshold, 50.0)
     }
 
     // MARK: - Pass / fail
 
     func test_scoreAboveThreshold_passes() async {
-        let rule = SCAestheticRule(model: MockAestheticModel(fixedScore: 8.0))
+        let rule = SCAestheticRule(model: MockAestheticModel(fixedScore: 80.0))
         let result = await rule.evaluate(makeFrame())
         XCTAssertTrue(result.passed)
     }
 
     func test_scoreBelowThreshold_fails() async {
-        let rule = SCAestheticRule(model: MockAestheticModel(fixedScore: 2.0))
+        let rule = SCAestheticRule(model: MockAestheticModel(fixedScore: 20.0))
         let result = await rule.evaluate(makeFrame())
         XCTAssertFalse(result.passed)
     }
@@ -71,31 +71,57 @@ final class SCAestheticRuleTests: XCTestCase {
         // With α=0.3 and a neutral start (5.0), the smoothed output must stay
         // well away from both extremes — proving EMA suppresses per-frame jitter.
         let alternatingRule = SCAestheticRule(
-            model: SequenceModel(scores: (0..<20).map { $0.isMultiple(of: 2) ? 0.0 : 10.0 }),
+            model: SequenceModel(scores: (0..<20).map { $0.isMultiple(of: 2) ? 0.0 : 100.0 }),
             smoothingFactor: 0.3
         )
         let frame = makeFrame()
-        var lastScore = 5.0
+        var lastScore = 50.0
         for _ in 0..<20 {
             let res = await alternatingRule.evaluate(frame)
             lastScore = try! XCTUnwrap(res.numericScore)
         }
-        XCTAssertGreaterThan(lastScore, 0.5, "EMA should prevent score reaching 0 floor")
-        XCTAssertLessThan(lastScore, 9.5,    "EMA should prevent score reaching 10 ceiling")
+        XCTAssertGreaterThan(lastScore, 5.0,  "EMA should prevent score reaching 0 floor")
+        XCTAssertLessThan(lastScore, 95.0,    "EMA should prevent score reaching 100 ceiling")
     }
 
     // MARK: - Graceful degradation
 
     func test_modelThrow_fallsBackToHeuristic() async {
         // ThrowingAestheticModel always throws. The rule falls back to the
-        // instagrammability heuristic, so the score is allowed to drift from 5.0.
-        // We verify a valid score in [0, 10] is still returned (no crash, no nil).
+        // instagrammability heuristic, so the score is allowed to drift from 50.0.
+        // We verify a valid score in [0, 100] is still returned (no crash, no nil).
         let rule = SCAestheticRule(model: ThrowingAestheticModel())
         let result = await rule.evaluate(makeFrame())
         let score = try! XCTUnwrap(result.numericScore)
         XCTAssertGreaterThanOrEqual(score, 0.0)
-        XCTAssertLessThanOrEqual(score, 10.0)
+        XCTAssertLessThanOrEqual(score, 100.0)
     }
+
+    // MARK: - Passing threshold boundary
+
+    func test_passingThreshold_exactlyAtThreshold_passes() async {
+        // A score exactly equal to the threshold must be considered passing (score >= threshold).
+        let rule = SCAestheticRule(model: MockAestheticModel(fixedScore: 50.0),
+                                   passingThreshold: 50.0)
+        let result = await rule.evaluate(makeFrame())
+        // EMA is initialised at 50.0 and fixedScore is 50.0 — result converges to 50.0.
+        if let score = result.numericScore {
+            XCTAssertEqual(result.passed, score >= 50.0,
+                "passed must equal (score >= passingThreshold), got score=\(score)")
+        }
+    }
+
+    func test_passingThreshold_justBelow_fails() async {
+        // Score well below threshold must fail.
+        let rule = SCAestheticRule(model: MockAestheticModel(fixedScore: 0.0),
+                                   passingThreshold: 50.0)
+        let frame = makeFrame()
+        // Run several frames to let EMA decay well below 50.
+        var result = await rule.evaluate(frame)
+        for _ in 0..<10 { result = await rule.evaluate(frame) }
+        XCTAssertFalse(result.passed, "Score far below threshold should not pass")
+    }
+
 
     // MARK: - numericScore presence
 
@@ -138,7 +164,7 @@ private actor SequenceModel: SCAestheticModelProvider {
     }
 
     private func nextScore() -> Double {
-        guard !scores.isEmpty else { return 5.0 }
+        guard !scores.isEmpty else { return 50.0 }
         let s = scores[index % scores.count]
         index += 1
         return s

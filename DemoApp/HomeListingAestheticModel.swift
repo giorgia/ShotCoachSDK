@@ -47,7 +47,10 @@ final class HomeListingAestheticModel: SCAestheticModelProvider {
         clipModel = try MLModel(contentsOf: clipURL, configuration: config)
         headModel = try MLModel(contentsOf: headURL, configuration: config)
 
-        // Read actual feature names from the compiled models — avoids hardcoding.
+        // Read feature names from the compiled models at init time.
+        // Both MobileClip S0 and HomeHead S0 are single-input/single-output models,
+        // so `.keys.first` is deterministic. The fallback literals match the known
+        // feature names and guard against an unexpected empty description dictionary.
         clipInputName  = clipModel.modelDescription.inputDescriptionsByName.keys.first  ?? "image"
         clipOutputName = clipModel.modelDescription.outputDescriptionsByName.keys.first ?? "embedding"
         headInputName  = headModel.modelDescription.inputDescriptionsByName.keys.first  ?? "embedding"
@@ -114,9 +117,9 @@ final class HomeListingAestheticModel: SCAestheticModelProvider {
         // Gamma calibration (γ < 1) lifts lower model outputs toward a more intuitive
         // 0–10 scale. HomeHead S0 probabilities cluster in [0.2, 0.6] for typical
         // home listing photos, so without calibration scores feel "too low".
-        // γ = 0.6: raw=0.3→4.9, raw=0.5→6.6, raw=0.7→8.1
+        // γ = 0.6: raw=0.3→49, raw=0.5→66, raw=0.7→81
         let calibrated = pow(max(0.0, min(1.0, raw)), 0.6)
-        return calibrated * 10.0
+        return calibrated * 100.0
     }
 
 

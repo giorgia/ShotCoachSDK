@@ -2,7 +2,7 @@ import Foundation
 import Vision
 import CoreVideo
 
-/// Scores frames on a 0–10 instagrammability scale using a single
+/// Scores frames on a 0–100 instagrammability scale using a single
 /// `VNGenerateAttentionBasedSaliencyImageRequest` and four weighted dimensions:
 ///
 /// | Dimension            | Weight | Signal                                           |
@@ -23,10 +23,10 @@ public struct SCInstagrammabilityRule: SCFrameRule {
     public var severity: SCRuleSeverity { .warning }
     public var feedbackMessage: String { "Improve composition" }
 
-    /// Score threshold in [0, 10] above which the rule is considered passing.
+    /// Score threshold in [0, 100] above which the rule is considered passing.
     public let passingThreshold: Double
 
-    public init(passingThreshold: Double = 5.0) {
+    public init(passingThreshold: Double = 50.0) {
         self.passingThreshold = passingThreshold
     }
 
@@ -55,7 +55,7 @@ public struct SCInstagrammabilityRule: SCFrameRule {
         let varietyScore = visualVarietyScore(observation: observation)
         let lightScore   = lightingScore(pixelBuffer: frame.pixelBuffer)
 
-        // Weighted composite → [0, 10].
+        // Weighted composite → [0, 1], then scaled to [0, 100].
         // Weights: focal clarity carries more weight (composition matters most for
         // real-estate instagrammability); lighting is reduced because indoor rooms
         // almost always fall in an acceptable luma range, making it a near-free score.
@@ -63,7 +63,7 @@ public struct SCInstagrammabilityRule: SCFrameRule {
                       + balanceScore * 0.25
                       + varietyScore * 0.20
                       + lightScore   * 0.15
-        let score = composite * 10.0
+        let score = composite * 100.0
 
         let label = scoreLabel(score)
         let suggestion = weakestSuggestion(focal: focalScore,
@@ -228,6 +228,11 @@ public struct SCInstagrammabilityRule: SCFrameRule {
 
         let fmt = CVPixelBufferGetPixelFormatType(pixelBuffer)
         switch fmt {
+        // kCVPixelFormatType_32BGRA falls into the default branch below.
+        // The default branch assumes BGRA byte order (B=off+0, G=off+1, R=off+2)
+        // which is correct for BGRA buffers delivered by AVFoundation and CVPixelBuffer.
+        // If the buffer is RGBA or ARGB the luminance weights will be applied to the
+        // wrong channels — add an explicit case before `default` if other formats arise.
         case kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange,
              kCVPixelFormatType_420YpCbCr8BiPlanarFullRange:
             guard let yBase = CVPixelBufferGetBaseAddressOfPlane(pixelBuffer, 0) else { return 0.5 }
@@ -275,10 +280,10 @@ public struct SCInstagrammabilityRule: SCFrameRule {
 
     private func scoreLabel(_ score: Double) -> String {
         switch score {
-        case 8.0...:  return "Stunning"
-        case 6.5...:  return "Great"
-        case 5.0...:  return "Good"
-        case 3.0...:  return "Needs Work"
+        case 80.0...: return "Stunning"
+        case 65.0...: return "Great"
+        case 50.0...: return "Good"
+        case 30.0...: return "Needs Work"
         default:      return "Poor"
         }
     }

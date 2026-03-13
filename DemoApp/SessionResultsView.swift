@@ -24,6 +24,8 @@ struct SessionResultsView: View {
     let entries: [ShotEntry]
     let cloudResults: [String: SCCloudResult]
     let info: CategoryInfo
+    /// Non-nil when some (but not all) shots failed cloud analysis.
+    let partialError: String?
 
     @State private var selectedEntry: ShotEntry?
 
@@ -89,6 +91,13 @@ struct SessionResultsView: View {
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                 }
+                if let error = partialError {
+                    Label(error, systemImage: "exclamationmark.triangle")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                        .multilineTextAlignment(.center)
+                        .padding(.top, 2)
+                }
             }
         } else {
             VStack(spacing: 10) {
@@ -97,7 +106,7 @@ struct SessionResultsView: View {
                     .foregroundStyle(.secondary)
                 Text("All shots captured")
                     .font(.headline)
-                Text("Add an OpenAI API key to unlock AI scoring.")
+                Text("Add an OpenAI or Anthropic API key to unlock AI scoring.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -210,7 +219,9 @@ private struct ThumbnailView: View {
             }
         }
         .task(id: data) {
-            image = UIImage(data: data)
+            // Decode off the main actor — full-resolution JPEG decode can take
+            // tens of milliseconds and would cause frame drops in the LazyVStack.
+            image = await Task.detached(priority: .utility) { UIImage(data: data) }.value
         }
     }
 }

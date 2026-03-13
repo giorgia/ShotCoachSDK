@@ -32,7 +32,9 @@ struct ShotListView: View {
     @State private var cloudResults: [String: SCCloudResult] = [:]
     @State private var isAnalyzing = false
     @State private var navigateToResults = false
+    @State private var partialError: String?
     @State private var showKeySetup = false
+    @State private var analysisError: String?
 
     @Namespace private var heroNamespace
 
@@ -77,6 +79,7 @@ struct ShotListView: View {
                     info: info,
                     shot: entries[entryIdx].shot,
                     heroNamespace: heroNamespace,
+                    aestheticModel: aestheticModel,
                     onCapture: { photo in
                         // Decode the JPEG off the main thread so the image is ready on
                         // the first animation frame — avoids the gray-box flash.
@@ -103,23 +106,29 @@ struct ShotListView: View {
             }
         }
         .task {
-            aestheticModel = try? HomeListingAestheticModel()
+            do {
+                aestheticModel = try HomeListingAestheticModel()
+            } catch {
+                // Missing .mlmodelc bundle resource or CoreML compilation failure.
+                // The aesthetic rule is silently disabled — all other rules still run.
+                assertionFailure("HomeListingAestheticModel failed to load: \(error)")
+            }
         }
         .navigationTitle(info.category.displayName)
         .toolbar(activeShotID != nil ? .hidden : .visible, for: .navigationBar)
         .background(Color(white: 0.05).ignoresSafeArea())
         .toolbar {
-            if entries.allSatisfy({ $0.capturedPhoto != nil }) {
+            if entries.contains(where: { $0.capturedPhoto != nil }) {
                 ToolbarItem(placement: .primaryAction) {
                     if isAnalyzing {
                         ProgressView()
                     } else {
                         Button("Send to AI") {
-                            if SCKeychainService.load(key: "openai_api_key") == nil {
+                            let hasKey = SCKeychainService.load(key: "openai_api_key") != nil
+                                      || SCKeychainService.load(key: "anthropic_api_key") != nil
+                            if !hasKey {
                                 showKeySetup = true
                             } else {
-                                // Set isAnalyzing synchronously before the Task suspends
-                                // to prevent a double-tap from launching two analyses.
                                 isAnalyzing = true
                                 Task { await runBatchAnalysis() }
                             }
@@ -130,38 +139,79 @@ struct ShotListView: View {
             }
         }
         .navigationDestination(isPresented: $navigateToResults) {
-            SessionResultsView(entries: entries, cloudResults: cloudResults, info: info)
+            SessionResultsView(entries: entries, cloudResults: cloudResults, info: info,
+                               partialError: partialError)
         }
         .sheet(isPresented: $showKeySetup) {
             APIKeySetupView { showKeySetup = false }
+        }
+        .alert("Analysis Failed", isPresented: Binding(
+            get: { analysisError != nil },
+            set: { if !$0 { analysisError = nil } }
+        )) {
+            Button("OK") { analysisError = nil }
+        } message: {
+            Text(analysisError ?? "")
         }
     }
 
     // MARK: - Batch analysis
 
+    @AppStorage("preferred_provider") private var preferredProvider: String = "anthropic"
+
     @MainActor
     private func runBatchAnalysis() async {
-        let key = SCKeychainService.load(key: "openai_api_key") ?? ""
+        // Pick provider based on preference, falling back to whichever key is available.
+        let provider: any SCCloudProvider
+        let anthropicKey = SCKeychainService.load(key: "anthropic_api_key") ?? ""
+        let openAIKey    = SCKeychainService.load(key: "openai_api_key")    ?? ""
+
+        if preferredProvider == "anthropic" && !anthropicKey.isEmpty {
+            provider = SCAnthropicProvider(apiKey: anthropicKey)
+        } else if !openAIKey.isEmpty {
+            provider = SCOpenAIProvider(apiKey: openAIKey)
+        } else if !anthropicKey.isEmpty {
+            provider = SCAnthropicProvider(apiKey: anthropicKey)
+        } else {
+            isAnalyzing = false
+            showKeySetup = true
+            return
+        }
+
         // isAnalyzing was set synchronously by the caller.
         // Reset state so a retry after navigating back works correctly.
         navigateToResults = false
         cloudResults = [:]
-        let provider = SCOpenAIProvider(apiKey: key)
-        await withTaskGroup(of: (String, SCCloudResult?).self) { group in
-            for entry in entries {
-                guard let photo = entry.capturedPhoto else { continue }
-                let prompt = info.category.cloudPrompt(for: entry.shot)
-                let entryID = entry.id
-                group.addTask {
-                    return (entryID, try? await provider.analyze(photo: photo, prompt: prompt))
+        partialError = nil
+        var firstError: String?
+        // Sequential — parallel requests trigger OpenAI's per-minute rate limit.
+        for entry in entries {
+            guard let photo = entry.capturedPhoto else { continue }
+            let prompt = info.category.cloudPrompt(for: entry.shot)
+            do {
+                cloudResults[entry.id] = try await provider.analyze(photo: photo, prompt: prompt)
+            } catch {
+                // Prioritise invalidAPIKey — it's always more actionable than a
+                // transient error that arrived earlier in the batch.
+                if let ce = error as? SCCloudError, case .invalidAPIKey = ce {
+                    firstError = ce.localizedDescription
+                } else if firstError == nil {
+                    firstError = error.localizedDescription
                 }
-            }
-            for await (id, result) in group {
-                if let result { cloudResults[id] = result }
             }
         }
         isAnalyzing = false
-        navigateToResults = true
+        if cloudResults.isEmpty, let error = firstError {
+            // Every call failed — surface the error so the user knows why nothing appeared.
+            analysisError = error
+        } else {
+            // At least one result — navigate to results.
+            // If some shots failed, surface a non-blocking warning in the results screen.
+            if firstError != nil {
+                partialError = firstError
+            }
+            navigateToResults = true
+        }
     }
 }
 
@@ -209,12 +259,12 @@ private struct ShotCell: View {
                 if let score = displayScore {
                     HStack(spacing: 3) {
                         Image(systemName: "sparkles").font(.caption.weight(.semibold))
-                        Text(score, format: .number.precision(.fractionLength(1))).font(.caption.weight(.bold))
+                        Text(score, format: .number.precision(.fractionLength(0))).font(.caption.weight(.bold))
                     }
                     .foregroundStyle(.white)
                     .padding(.horizontal, 7)
                     .padding(.vertical, 4)
-                    .background(score >= 8 ? Color.green : score >= 5 ? Color.orange : Color.red)
+                    .background(score >= 80 ? Color.green : score >= 50 ? Color.orange : Color.red)
                     .clipShape(Capsule())
                     .padding(6)
                 }
