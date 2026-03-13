@@ -101,13 +101,11 @@ Always read that file before starting a new task — it contains the exact Claud
 ## Current Phase
 
 ```
-Week:           2
-Phase:          ShotCoachUI + SDK Demo · App Camera Integration
-Last completed: SCAestheticRule + SCAestheticModelProvider
-                (actor-based EMA rule, CoreML model injection protocol, 9 XCTests,
-                nonisolated constants, graceful throw degradation)
-                — swift build clean, swift test 75/75
-Next task:      check master plan
-Branch:         (none — on main)
+Week:           3
+Phase:          SDK paused — ListingApp in progress externally
+Last completed: PR #14 review fixes (99 tests, 0 failures)
+                + MIT LICENSE + GitHub Actions CI workflow
+Next task:      check master plan for next SDK milestone
+Branch:         main
 Last tag:       (none)
 ```

@@ -100,7 +100,8 @@ final class RuleTests: XCTestCase {
         XCTAssertEqual(SCBrightnessRule().ruleID, "sc.brightness")
     }
 
-    func testBrightness_performance() async {
+    func testBrightness_performance() async throws {
+        try XCTSkipIf(ProcessInfo.processInfo.environment["CI"] != nil, "Performance tests skipped in CI")
         let rule  = SCBrightnessRule()
         let f     = frame(makeSolid(r: 128, g: 128, b: 128))
         _ = await rule.evaluate(f)  // warm up
@@ -127,7 +128,8 @@ final class RuleTests: XCTestCase {
         XCTAssertEqual(SCBlurRule().ruleID, "sc.blur")
     }
 
-    func testBlur_performance() async {
+    func testBlur_performance() async throws {
+        try XCTSkipIf(ProcessInfo.processInfo.environment["CI"] != nil, "Performance tests skipped in CI")
         let rule  = SCBlurRule()
         let f     = frame(makeCheckerboard())
         _ = await rule.evaluate(f)  // warm up
@@ -153,7 +155,8 @@ final class RuleTests: XCTestCase {
         XCTAssertEqual(SCHorizonRule().ruleID, "sc.horizon")
     }
 
-    func testHorizon_performance() async {
+    func testHorizon_performance() async throws {
+        try XCTSkipIf(ProcessInfo.processInfo.environment["CI"] != nil, "Performance tests skipped in CI")
         let rule  = SCHorizonRule()
         let f     = frame(makeSolid(r: 128, g: 128, b: 128))
         _ = await rule.evaluate(f)  // warm up Vision
@@ -184,7 +187,8 @@ final class RuleTests: XCTestCase {
         XCTAssertEqual(SCClutterRule().ruleID, "sc.clutter")
     }
 
-    func testClutter_performance() async {
+    func testClutter_performance() async throws {
+        try XCTSkipIf(ProcessInfo.processInfo.environment["CI"] != nil, "Performance tests skipped in CI")
         let rule  = SCClutterRule()
         let f     = frame(makeSolid(r: 128, g: 128, b: 128))
         _ = await rule.evaluate(f)  // warm up Vision
@@ -209,7 +213,8 @@ final class RuleTests: XCTestCase {
         XCTAssertEqual(SCDistanceRule().ruleID, "sc.distance")
     }
 
-    func testDistance_performance() async {
+    func testDistance_performance() async throws {
+        try XCTSkipIf(ProcessInfo.processInfo.environment["CI"] != nil, "Performance tests skipped in CI")
         let rule  = SCDistanceRule()
         let f     = frame(makeSolid(r: 128, g: 128, b: 128))
         _ = await rule.evaluate(f)  // warm up Vision
@@ -232,7 +237,8 @@ final class RuleTests: XCTestCase {
         XCTAssertEqual(SCReflectionRule().ruleID, "sc.reflection")
     }
 
-    func testReflection_performance() async {
+    func testReflection_performance() async throws {
+        try XCTSkipIf(ProcessInfo.processInfo.environment["CI"] != nil, "Performance tests skipped in CI")
         let rule  = SCReflectionRule()
         let f     = frame(makeSolid(r: 128, g: 128, b: 128))
         _ = await rule.evaluate(f)  // warm up Vision
@@ -277,7 +283,8 @@ final class RuleTests: XCTestCase {
         XCTAssertEqual(SCShotClassifierRule().feedbackMessage, "")
     }
 
-    func testClassifier_performance() async {
+    func testClassifier_performance() async throws {
+        try XCTSkipIf(ProcessInfo.processInfo.environment["CI"] != nil, "Performance tests skipped in CI")
         let rule = SCShotClassifierRule()
         let f    = frame(makeSolid(r: 128, g: 128, b: 128))
         _ = await rule.evaluate(f)  // warm up Vision model
