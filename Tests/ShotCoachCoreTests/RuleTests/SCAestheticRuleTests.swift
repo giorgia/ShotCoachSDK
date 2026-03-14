@@ -1,6 +1,6 @@
 import XCTest
 import CoreVideo
-@testable import ShotCoachCore
+@_spi(ShotCoachInternal) @testable import ShotCoachCore
 
 // MARK: - Mock providers
 

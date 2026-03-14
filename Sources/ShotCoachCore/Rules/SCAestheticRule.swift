@@ -18,6 +18,7 @@ import CoreVideo
 /// Exponential moving average with configurable `smoothingFactor` (α) suppresses
 /// per-frame jitter without an external filter. Lower α = smoother / more lag;
 /// higher α = more responsive / more jitter.
+@_spi(ShotCoachInternal)
 public actor SCAestheticRule: SCFrameRule {
 
     // MARK: - SCFrameRule (nonisolated constants)

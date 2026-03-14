@@ -30,6 +30,7 @@ import CoreML
 /// `SCFrameAnalyzer` sidechains this result: it extracts both fields and places them in
 /// `SCFrameResult.topSceneLabel` and `SCFrameResult.detectedShotType`. The result never
 /// appears in `SCFrameResult.rules` and never triggers a `FeedbackPill`.
+@_spi(ShotCoachInternal)
 public struct SCShotClassifierRule: SCFrameRule {
 
     /// The stable rule identifier used by `SCFrameAnalyzer` to sidechain this result.
