@@ -9,9 +9,28 @@ Real-time camera coaching for iOS. On-device Vision analysis every frame, cloud 
 
 ---
 
-<p align="center">
-  <img src="demo.png" alt="ShotCoach live overlay — rule icons, shot label, focus circle" width="160">
-</p>
+## Demo App
+
+<table>
+<tr>
+<td width="180" valign="top">
+<img src="demo.png" alt="ShotCoach live overlay" width="160">
+</td>
+<td valign="top">
+
+**ShotCoachDemo** is a reference iOS app included in the repository showing all four built-in categories in action.
+
+- Live camera overlay with real-time rule feedback (brightness, sharpness, horizon, instagrammability)
+- Shot checklist — tracks which required shots have been captured
+- Room detection — warns when the camera sees the wrong room for the current shot
+- Post-capture cloud analysis with a structured score and recommendations
+- Zoom, focus tap, and flash controls wired to the SDK
+
+The source lives in `DemoApp/` and is the recommended starting point for integrating ShotCoach into your own app.
+
+</td>
+</tr>
+</table>
 
 ---
 
