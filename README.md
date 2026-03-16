@@ -11,6 +11,35 @@ Real-time camera coaching for iOS. On-device Vision analysis every frame, cloud 
 
 ## Architecture
 
+ShotCoach runs a hybrid analysis pipeline — on-device for every frame, cloud only after capture.
+
+```
+SCFrame (CVPixelBuffer + metadata)
+        │
+        ├── SCFrameAnalyzer (actor)
+        │       ├── SCBrightnessRule       ─┐
+        │       ├── SCHorizonRule           │
+        │       ├── SCBlurRule              ├── concurrent withTaskGroup, throttled to 1.5s
+        │       ├── SCDistanceRule          │
+        │       ├── SCReflectionRule        │
+        │       └── SCInstagrammabilityRule ─┘
+        │               │
+        │               ▼
+        │       SCFrameResult → SCAnalysisDelegate (@MainActor)
+        │
+        └── (on shutter tap)
+                SCOpenAIProvider / SCAnthropicProvider
+                        │
+                        ▼
+                SCCloudResult { score, issues, recommendations }
+```
+
+**Why hybrid?** Vision.framework gives sub-80ms feedback with zero API cost. GPT-4o or Claude fires once per shot for the structured quality report that on-device models can't produce.
+
+**Why actor isolation for SCFrameAnalyzer?** Rules run concurrently via `withTaskGroup`. The analyzer is an actor so the 1.5s throttle timestamp is mutation-safe across concurrent callers without a lock.
+
+**Why protocol injection for CoreML models?** `SCAestheticRule` accepts any `SCAestheticModelProvider` — the SDK ships no bundled model weights. App targets own the `.mlpackage`, so model updates don't require an SDK release.
+
 ## Quick Start
 
 ## Built-in Categories
