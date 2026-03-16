@@ -42,6 +42,54 @@ SCFrame (CVPixelBuffer + metadata)
 
 ## Quick Start
 
+### Pattern A — Zero config
+
+```swift
+import ShotCoachCore
+import ShotCoachUI
+
+let sdk = ShotCoach(category: .homeListing, apiKey: "sk-...")
+
+SCCameraGuidanceView(sdk: sdk)
+    .onResult { photo in print(photo.cloudResult?.score ?? 0) }
+```
+
+### Pattern B — Extend a built-in
+
+```swift
+ShotCoach(
+    category: SCBuiltInCategory.homeListing.extending {
+        $0.appendPrompt("Also evaluate pool visibility and outdoor dining areas.")
+        $0.addRequiredShot(SCShotType(id: "outdoor", displayName: "Outdoor Space"))
+    },
+    apiKey: key
+)
+```
+
+### Pattern C — Fully custom
+
+```swift
+struct WatchListingConfig: SCCategoryConfig {
+    var categoryID = "watch_listing"
+    var displayName = "Watch Photography"
+    var requiredShots = [
+        SCShotType(id: "dial_face",    displayName: "Dial Face"),
+        SCShotType(id: "clasp_detail", displayName: "Clasp Detail"),
+        SCShotType(id: "side_profile", displayName: "Side Profile"),
+    ]
+    var onDeviceRules: [any SCFrameRule] = [
+        SCBlurRule(minSharpnessScore: 90),
+        SCReflectionRule(),
+        SCBrightnessRule(),
+    ]
+    func cloudPrompt(for shot: SCShotType) -> String {
+        "Evaluate this watch listing photo: dial legibility, glare on crystal, clasp condition, background. Return JSON: {score, issues, recommendations}"
+    }
+}
+
+let sdk = ShotCoach(category: WatchListingConfig(), apiKey: key)
+```
+
 ## Built-in Categories
 
 ## On-Device Rules
