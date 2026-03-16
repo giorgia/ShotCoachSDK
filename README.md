@@ -9,6 +9,12 @@ Real-time camera coaching for iOS. On-device Vision analysis every frame, cloud 
 
 ---
 
+<p align="center">
+  <img src="demo.png" alt="ShotCoach live overlay — rule icons, shot label, focus circle" width="320">
+</p>
+
+---
+
 ## Architecture
 
 ShotCoach runs a hybrid analysis pipeline — on-device for every frame, cloud only after capture.
