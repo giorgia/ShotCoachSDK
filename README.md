@@ -115,8 +115,62 @@ All rules conform to `SCFrameRule` and must complete in under 80ms. They run con
 
 ## CoreML Aesthetic Pipeline
 
+`SCAestheticRule` blends a CoreML model with the Vision heuristic on every live frame.
+
+```
+CVPixelBuffer
+    ├── mobileclip_s0_image  (CLIP encoder → 512-D embedding)  ─┐
+    │                                                             ├── raw score (70%)
+    ├── home_head_s0         (embedding → sigmoid [0, 1])       ─┘
+    │
+    └── SCInstagrammabilityRule  (Vision heuristic)               ── heuristic score (30%)
+                │
+                ▼
+        blended score 0–100
+                │
+                ▼
+        EMA  (α = 0.3)    ← suppresses per-frame jitter without external state
+                │
+                ▼
+        SCRuleResult { passed, numericScore, message }
+```
+
+The model is injected via `SCAestheticModelProvider` — a `Sendable` protocol the app target implements. The SDK ships no model weights. `DemoApp/MLModels/` contains the reference `.mlpackage` files and `DemoApp/HomeListingAestheticModel.swift` is the full integration example.
+
+```swift
+ShotCoach(
+    category: SCBuiltInCategory.homeListing.extending {
+        $0.addRule(SCAestheticRule(model: try HomeListingAestheticModel()))
+    },
+    apiKey: key
+)
+```
+
 ## Installation
+
+Add to your `Package.swift`:
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/giorgia/ShotCoachSDK", from: "1.0.0"),
+],
+targets: [
+    .target(name: "YourApp", dependencies: [
+        .product(name: "ShotCoachCore", package: "ShotCoachSDK"),  // headless engine
+        .product(name: "ShotCoachUI",   package: "ShotCoachSDK"),  // SwiftUI layer (optional)
+    ]),
+]
+```
+
+Or in Xcode: **File → Add Package Dependencies** and enter `https://github.com/giorgia/ShotCoachSDK`.
 
 ## Requirements
 
+- iOS 16.0+
+- Xcode 15+
+- Swift 5.9+
+- OpenAI API key (stored in Keychain, never logged or embedded in URLs)
+
 ## License
+
+MIT — see [LICENSE](LICENSE).
