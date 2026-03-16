@@ -25,7 +25,7 @@ import ShotCoachUI
 
 let sdk = ShotCoach(category: .homeListing, apiKey: "sk-...")
 
-CameraGuidanceView(sdk: sdk)
+SCCameraGuidanceView(sdk: sdk)
     .onResult { photo in print(photo.cloudResult?.score ?? 0) }
 ```
 
@@ -37,10 +37,10 @@ That's it. Live overlay, shot checklist, and post-capture analysis — all inclu
 
 | Category | Required Shots | Key Rules | Best For |
 |---|---|---|---|
-| `.homeListing` | 6 | Brightness, horizon, blur, clutter | Airbnb, Zillow, VRBO |
+| `.homeListing` | 6 | Brightness, horizon, blur, instagrammability | Airbnb, Zillow, VRBO |
 | `.carListing` | 8 | Brightness, reflection, blur, distance | Facebook Marketplace, AutoTrader |
 | `.productPhoto` | 6 | Brightness, blur, reflection, horizon | Shopify, Etsy, Amazon |
-| `.foodPhoto` | 5 | Brightness, blur, horizon (relaxed) | Delivery apps, restaurant menus |
+| `.foodPhoto` | 5 | Brightness, blur, horizon (relaxed), instagrammability | Delivery apps, restaurant menus |
 
 ---
 
@@ -60,7 +60,7 @@ struct WatchListingConfig: SCCategoryConfig {
         SCReflectionRule(),
         SCBrightnessRule()
     ]
-    func cloudPrompt(for frame: SCFrame) -> String {
+    func cloudPrompt(for shot: SCShotType) -> String {
         "Analyze this watch listing photo for: dial visibility, reflection glare, clasp condition, background cleanliness. Return JSON: {shot_score, issues, recommendations}"
     }
 }
@@ -157,7 +157,7 @@ public protocol SCAestheticModelProvider: Sendable {
 
 ```swift
 SCAestheticRule(
-    model: HomeListingAestheticModel(),
+    model: try HomeListingAestheticModel(),
     passingThreshold: 60.0,   // stricter pass bar
     smoothingFactor: 0.2      // smoother feedback
 )
@@ -172,9 +172,9 @@ ShotCoach (SPM Package)
 ├── ShotCoachCore        ← headless engine, no UI imports, testable on Mac
 │   ├── Protocols        ← SCFrameRule, SCCategoryConfig, SCCloudProvider, SCAnalysisDelegate
 │   ├── Models           ← SCFrame, SCFrameResult, SCCloudResult, SCPhoto
-│   ├── Rules            ← 6 on-device Vision.framework rules (<80ms each)
+│   ├── Rules            ← 7 on-device Vision.framework rules (<80ms each)
 │   ├── Engine           ← SCFrameAnalyzer (concurrent, throttled to 1.5s)
-│   ├── Cloud            ← SCOpenAIProvider (GPT-4o, retry logic, Keychain)
+│   ├── Cloud            ← SCOpenAIProvider (GPT-4o), SCAnthropicProvider (Claude)
 │   └── BuiltIn          ← SCBuiltInCategory (4 production configs + .extending())
 │
 ├── ShotCoachUI          ← optional SwiftUI layer (imports ShotCoachCore)
@@ -190,7 +190,7 @@ ShotCoach (SPM Package)
 | Stage | Where | Cost | Latency |
 |---|---|---|---|
 | Live frame feedback | On-device (Vision.framework) | Free | <80ms |
-| Post-capture deep analysis | Cloud (GPT-4o) | ~$0.02–0.05 | 2–5s |
+| Post-capture deep analysis | Cloud (GPT-4o or Claude) | ~$0.02–0.05 | 2–5s |
 
 ---
 
@@ -201,14 +201,14 @@ ShotCoach (SPM Package)
 In Xcode: **File → Add Package Dependencies** and enter:
 
 ```
-https://github.com/you/ShotCoach
+https://github.com/giorgia/ShotCoachSDK
 ```
 
 Or add to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/you/ShotCoach", from: "1.0.0")
+    .package(url: "https://github.com/giorgia/ShotCoachSDK", from: "1.0.0")
 ],
 targets: [
     .target(name: "YourApp", dependencies: [
@@ -225,14 +225,14 @@ targets: [
 - iOS 16.0+
 - Xcode 15+
 - Swift 5.9+
-- OpenAI API key (developer-provided, stored in Keychain)
+- OpenAI API key (for `SCOpenAIProvider`) or Anthropic API key (for `SCAnthropicProvider`) — developer-provided, stored in Keychain
 
 ---
 
 ## Theming
 
 ```swift
-CameraGuidanceView(sdk: sdk)
+SCCameraGuidanceView(sdk: sdk)
     .theme(SCTheme(
         accent: .green,
         overlayStyle: .frostedGlass,   // .frostedGlass | .minimal | .bold
@@ -240,7 +240,7 @@ CameraGuidanceView(sdk: sdk)
     ))
 
 // Or use a preset
-CameraGuidanceView(sdk: sdk)
+SCCameraGuidanceView(sdk: sdk)
     .theme(.minimal)
 ```
 
