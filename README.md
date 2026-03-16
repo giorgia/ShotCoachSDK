@@ -92,7 +92,26 @@ let sdk = ShotCoach(category: WatchListingConfig(), apiKey: key)
 
 ## Built-in Categories
 
+| Category | Shots | On-Device Rules |
+|---|---|---|
+| `.homeListing` | 6 | Brightness, Horizon, Blur, Instagrammability |
+| `.carListing` | 8 | Brightness, Reflection, Blur, Distance |
+| `.productPhoto` | 6 | Brightness, Blur, Reflection, Horizon |
+| `.foodPhoto` | 5 | Brightness, Blur, Horizon (±15°), Instagrammability |
+
 ## On-Device Rules
+
+All rules conform to `SCFrameRule` and must complete in under 80ms. They run concurrently per frame inside `SCFrameAnalyzer`.
+
+| Rule | Measures | Signal |
+|---|---|---|
+| `SCBrightnessRule` | Average luminance (Rec.709) | Under/overexposure |
+| `SCHorizonRule` | Horizon tilt via `VNDetectHorizonRequest` | Skewed architectural shots |
+| `SCBlurRule` | Laplacian variance sharpness | Camera shake or missed focus |
+| `SCDistanceRule` | Subject bounding box area | Subject too far or too close |
+| `SCReflectionRule` | Specular highlight ratio | Glare on surfaces or glass |
+| `SCInstagrammabilityRule` | Focal clarity, compositional balance, visual variety, lighting | Overall composition quality |
+| `SCShotClassifierRule` | Scene type via hint-based Vision scoring | Wrong room detection |
 
 ## CoreML Aesthetic Pipeline
 
