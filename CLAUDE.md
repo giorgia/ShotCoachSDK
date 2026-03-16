@@ -103,8 +103,8 @@ Always read that file before starting a new task — it contains the exact Claud
 ```
 Week:           3
 Phase:          SDK paused — ListingApp in progress externally
-Last completed: PR #14 review fixes (99 tests, 0 failures)
-                + MIT LICENSE + GitHub Actions CI workflow
+Last completed: PR #16 merged — rename Classifiers → MLModels, document CoreML
+                aesthetic pipeline in README, fix CI performance test skip
 Next task:      check master plan for next SDK milestone
 Branch:         main
 Last tag:       (none)
