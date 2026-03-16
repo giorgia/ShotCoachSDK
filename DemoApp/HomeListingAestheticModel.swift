@@ -2,7 +2,7 @@ import CoreML
 import CoreImage
 import CoreVideo
 import UIKit
-import ShotCoachCore
+@_spi(ShotCoachInternal) import ShotCoachCore
 
 /// Concrete `SCAestheticModelProvider` for the Home Listing vertical.
 ///
