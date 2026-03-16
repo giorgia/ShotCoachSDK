@@ -1,7 +1,6 @@
 import Foundation
 import Vision
 import CoreVideo
-import CoreML
 
 /// Classifies the scene type in each camera frame using `VNClassifyImageRequest`
 /// (Apple's built-in Vision taxonomy — no CoreML model required).
@@ -66,31 +65,6 @@ public struct SCShotClassifierRule: SCFrameRule {
         )
     }
 
-    // MARK: - CoreML room classifier (optional)
-
-    /// Lazily loaded CoreML room-type classifier.
-    /// Returns `nil` when the model bundle resource is absent — in that case
-    /// `classifyScene()` falls back silently to `VNClassifyImageRequest`.
-    ///
-    /// TODO: Bundle `RoomTypeClassifier.mlmodelc` before shipping.
-    /// Train via Create ML Image Classifier on the 9-class room/shot taxonomy
-    /// (living_room, kitchen, master_bedroom, bathroom, front_exterior, backyard,
-    ///  dashboard, interior_seats, food_hero) and export as `.mlmodelc`.
-    private static let roomModel: VNCoreMLModel? = {
-        // TODO: Bundle RoomTypeClassifier.mlmodel before shipping.
-        // Train via Create ML Image Classifier on the 9-class room/shot taxonomy and
-        // export as .mlmodelc. Add to the app target in Xcode; Bundle.main finds it there.
-        // When moving to SPM resources, declare `resources: [.copy("Resources/")]` in
-        // Package.swift and switch Bundle.main → Bundle.module.
-        guard let url = Bundle.main.url(forResource: "RoomTypeClassifier",
-                                        withExtension: "mlmodelc"),
-              let mlModel = try? MLModel(contentsOf: url),
-              let vnModel = try? VNCoreMLModel(for: mlModel) else {
-            return nil  // Graceful fallback to VNClassifyImageRequest.
-        }
-        return vnModel
-    }()
-
     // MARK: - Private — classification
 
     /// Minimum confidence for an individual observation to appear in the display label
@@ -103,26 +77,13 @@ public struct SCShotClassifierRule: SCFrameRule {
     private func classifyScene(pixelBuffer: CVPixelBuffer) -> (String?, String?) {
         let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, options: [:])
 
-        // ── Classification: CoreML path (preferred) or VNClassifyImageRequest (fallback) ──
-        let observations: [VNClassificationObservation]
-        if let model = Self.roomModel {
-            let req = VNCoreMLRequest(model: model)
-            req.imageCropAndScaleOption = .centerCrop
-            do {
-                try handler.perform([req])
-            } catch {
-                return (nil, nil)
-            }
-            observations = req.results as? [VNClassificationObservation] ?? []
-        } else {
-            let req = VNClassifyImageRequest()
-            do {
-                try handler.perform([req])
-            } catch {
-                return (nil, nil)
-            }
-            observations = req.results ?? []
+        let req = VNClassifyImageRequest()
+        do {
+            try handler.perform([req])
+        } catch {
+            return (nil, nil)
         }
+        let observations: [VNClassificationObservation] = req.results ?? []
         let results = observations
         guard !results.isEmpty else { return (nil, nil) }
 

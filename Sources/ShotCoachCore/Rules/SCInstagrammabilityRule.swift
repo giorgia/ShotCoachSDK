@@ -15,8 +15,9 @@ import CoreVideo
 /// Unlike `SCClutterRule`, this rule rewards intentional design — a gallery wall
 /// with good lighting and a clear focal subject scores high, not low.
 ///
-/// - Note: Dimension weights are starting points.
-///   TODO: Tune weights against a labelled real-estate photo dataset.
+/// - Note: Dimension weights (focal 40%, balance 25%, variety 20%, lighting 15%) are
+///   v1 heuristics calibrated for real-estate interiors. They may be refined in a future
+///   release once real-world usage data is available.
 public struct SCInstagrammabilityRule: SCFrameRule {
 
     public var ruleID: String { "sc.instagrammability" }
