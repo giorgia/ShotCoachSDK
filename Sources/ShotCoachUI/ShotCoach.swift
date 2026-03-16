@@ -198,6 +198,10 @@ public final class ShotCoach: ObservableObject {
         advanceShot()
     }
 
+    /// Skips the current required shot and advances to the next one.
+    /// Use this to let users bypass a shot they can't capture (e.g. no backyard).
+    public func skipCurrentShot() { advanceShot() }
+
     // MARK: - Private
 
     private let cloudProvider: any SCCloudProvider
@@ -206,11 +210,7 @@ public final class ShotCoach: ObservableObject {
     /// Prevents stacking multiple `beginConfiguration` blocks from rapid pinch events.
     private var isSwitchingLens = false
 
-    /// Skips the current required shot and advances to the next one.
-    /// Use this to let users bypass a shot they can't capture (e.g. no backyard).
-    public func skipCurrentShot() { advanceShot() }
-
-    func advanceShot() {
+    private func advanceShot() {
         guard let current = currentShot,
               let idx = category.requiredShots.firstIndex(of: current),
               idx + 1 < category.requiredShots.count else {
