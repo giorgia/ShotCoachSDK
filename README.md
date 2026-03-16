@@ -94,16 +94,18 @@ ShotCoach(category: WatchListingConfig(), apiKey: key)
 
 ShotCoach includes `SCAestheticRule` — a live-frame aesthetic scorer that blends a **CoreML model** with the built-in Vision heuristic.
 
-The SDK ships `Classifiers/home_head_s0.mlpackage` — a pre-trained aesthetic model for home listing photography. For other categories you supply your own `.mlpackage`.
+The Demo app ships two pre-trained models in `DemoApp/MLModels/` for home listing photography. For other categories you supply your own `.mlpackage`.
 
 ### How the scoring pipeline works
 
 ```
 CVPixelBuffer (live frame)
         │
-        ├──▶ CoreML model (.mlpackage)        → raw score 0–100   (70 % weight)
+        ├──▶ mobileclip_s0_image  (CLIP encoder → 512-D embedding)  ─┐
+        │                                                              ├──▶ raw score 0–100  (70 % weight)
+        ├──▶ home_head_s0         (embedding → sigmoid probability)  ─┘
         │
-        └──▶ SCInstagrammabilityRule (Vision) → heuristic score   (30 % weight)
+        └──▶ SCInstagrammabilityRule (Vision) → heuristic score          (30 % weight)
                         │
                         ▼
                blended score 0–100
@@ -119,33 +121,19 @@ If the CoreML model throws (e.g. unsupported buffer format), the rule falls back
 
 ### Using the bundled home listing model
 
-**Step 1 — Add `home_head_s0.mlpackage` to your Xcode app target.**
+**Step 1 — Add both `.mlpackage` files to your Xcode app target.**
 
-Drag `MLModels/home_head_s0.mlpackage` from the SDK into your Xcode project and tick your app target. Xcode auto-generates the `home_head_s0` Swift class.
+Drag `DemoApp/MLModels/mobileclip_s0_image.mlpackage` and `DemoApp/MLModels/home_head_s0.mlpackage` into your Xcode project and tick your app target. Xcode compiles them to `.mlmodelc` at build time.
 
-**Step 2 — Write a thin `SCAestheticModelProvider` conformance:**
+**Step 2 — Write a thin `SCAestheticModelProvider` conformance.**
 
-```swift
-import CoreML
-import CoreVideo
-import ShotCoachCore
-
-final class HomeListingAestheticModel: SCAestheticModelProvider {
-    private let model = try! home_head_s0(configuration: MLModelConfiguration())
-
-    func score(_ pixelBuffer: CVPixelBuffer) async throws -> Double {
-        let input = home_head_s0Input(image: pixelBuffer)
-        let output = try await model.prediction(input: input)
-        return output.aestheticScore * 100  // normalise to 0–100
-    }
-}
-```
+See `DemoApp/HomeListingAestheticModel.swift` for the full implementation. It chains the two models: CLIP encoder produces the embedding, the home head maps it to a calibrated 0–100 score.
 
 **Step 3 — Inject it via `.extending`:**
 
 ```swift
 ShotCoach(category: SCBuiltInCategory.homeListing.extending {
-    $0.appendRule(SCAestheticRule(model: HomeListingAestheticModel()))
+    $0.appendRule(SCAestheticRule(model: try HomeListingAestheticModel()))
 }, apiKey: key)
 ```
 

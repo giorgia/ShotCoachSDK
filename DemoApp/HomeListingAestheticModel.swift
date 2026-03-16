@@ -12,8 +12,8 @@ import UIKit
 ///   2. **HomeHead S0** (`home_head_s0`) — maps the embedding to a sigmoid
 ///      probability in [0, 1] (output feature: `var_5`), scaled to [0, 10].
 ///
-/// Both `.mlpackage` files live in the SDK's `MLModels/` directory and must be added
-/// to the app target's bundle (drag into Xcode → target membership = ShotCoachDemo).
+/// Both `.mlpackage` files live in `DemoApp/MLModels/` and must be added to the app
+/// target's bundle (drag into Xcode → target membership = ShotCoachDemo).
 final class HomeListingAestheticModel: SCAestheticModelProvider {
 
     // MARK: - Stored
