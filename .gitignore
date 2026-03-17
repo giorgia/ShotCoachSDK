@@ -17,3 +17,7 @@ xcuserdata/
 
 # Claude Code
 .claude/
+
+# ML pipeline — large files, not committed
+ml/data/
+ml/output/
