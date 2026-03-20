@@ -1,6 +1,6 @@
 import SwiftUI
 @_spi(ShotCoachInternal) import ShotCoachCore
-import ShotCoachUI
+@_spi(ShotCoachInternal) import ShotCoachUI
 
 /// Per-shot camera overlay embedded in `ShotListView`'s ZStack.
 ///

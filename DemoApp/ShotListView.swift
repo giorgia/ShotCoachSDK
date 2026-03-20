@@ -1,6 +1,6 @@
 import SwiftUI
 import ShotCoachCore
-import ShotCoachUI
+@_spi(ShotCoachInternal) import ShotCoachUI
 
 // MARK: - ShotEntry
 
