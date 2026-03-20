@@ -16,6 +16,7 @@ import UIKit
 ///
 /// Both `.mlpackage` files are bundled inside `ShotCoachUI` and loaded via
 /// `Bundle.module` — no manual resource copying is required by the host app.
+@_spi(ShotCoachInternal)
 public final class SCGenericAestheticModel: SCAestheticModelProvider {
 
     // MARK: - Stored
