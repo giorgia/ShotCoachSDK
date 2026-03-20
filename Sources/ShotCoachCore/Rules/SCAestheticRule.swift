@@ -44,6 +44,11 @@ public actor SCAestheticRule: SCFrameRule {
     /// Lower = smoother (more lag); higher = more responsive (more jitter).
     public nonisolated let smoothingFactor: Double
 
+    /// Weight given to the CoreML model score in the blend with the Vision heuristic.
+    /// The heuristic receives `1 - modelWeight`. Default 0.7 (70 % model, 30 % heuristic).
+    /// Lower this for categories where LAION-trained scores are unreliable (e.g. food).
+    public nonisolated let modelWeight: Double
+
     // MARK: - Mutable actor-isolated state
 
     /// Current exponentially smoothed score. Starts at 50.0 (neutral midpoint of 0–100).
@@ -54,13 +59,17 @@ public actor SCAestheticRule: SCFrameRule {
     public init(
         model: any SCAestheticModelProvider,
         passingThreshold: Double = 50.0,
-        smoothingFactor: Double = 0.3
+        smoothingFactor: Double = 0.3,
+        modelWeight: Double = 0.7
     ) {
         precondition(smoothingFactor > 0 && smoothingFactor <= 1,
                      "smoothingFactor must be in (0, 1]; got \(smoothingFactor)")
+        precondition(modelWeight >= 0 && modelWeight <= 1,
+                     "modelWeight must be in [0, 1]; got \(modelWeight)")
         self.model = model
         self.passingThreshold = passingThreshold
         self.smoothingFactor = smoothingFactor
+        self.modelWeight = modelWeight
     }
 
     // MARK: - SCFrameRule
@@ -81,7 +90,7 @@ public actor SCAestheticRule: SCFrameRule {
         do {
             let raw = try await model.score(frame.pixelBuffer)
             let clamped = max(0.0, min(100.0, raw))
-            blended = 0.7 * clamped + 0.3 * heuristicScore
+            blended = modelWeight * clamped + (1.0 - modelWeight) * heuristicScore
         } catch {
             blended = heuristicScore
         }

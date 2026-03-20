@@ -28,7 +28,7 @@ struct ShotListView: View {
 
     @State private var entries: [ShotEntry]
     @State private var activeShotID: String?
-    @State private var aestheticModel: HomeListingAestheticModel?
+    @State private var aestheticModel: GenericAestheticModel?
     @State private var cloudResults: [String: SCCloudResult] = [:]
     @State private var isAnalyzing = false
     @State private var navigateToResults = false
@@ -107,11 +107,11 @@ struct ShotListView: View {
         }
         .task {
             do {
-                aestheticModel = try HomeListingAestheticModel()
+                aestheticModel = try GenericAestheticModel()
             } catch {
                 // Missing .mlmodelc bundle resource or CoreML compilation failure.
                 // The aesthetic rule is silently disabled — all other rules still run.
-                assertionFailure("HomeListingAestheticModel failed to load: \(error)")
+                assertionFailure("GenericAestheticModel failed to load: \(error)")
             }
         }
         .navigationTitle(info.category.displayName)
@@ -221,7 +221,7 @@ private struct ShotCell: View {
     let entry: ShotEntry
     let isActive: Bool
     let namespace: Namespace.ID
-    let aestheticModel: HomeListingAestheticModel?
+    let aestheticModel: GenericAestheticModel?
 
     /// Populated asynchronously for camera-roll photos that bypassed live analysis.
     @State private var asyncScore: Double?
@@ -264,7 +264,7 @@ private struct ShotCell: View {
                     .foregroundStyle(.white)
                     .padding(.horizontal, 7)
                     .padding(.vertical, 4)
-                    .background(score >= 80 ? Color.green : score >= 50 ? Color.orange : Color.red)
+                    .background(score >= 80 ? Color.green : Color.yellow)
                     .clipShape(Capsule())
                     .padding(6)
                 }

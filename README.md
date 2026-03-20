@@ -134,7 +134,7 @@ All rules conform to `SCFrameRule` and must complete in under 80ms. They run con
 | `SCHorizonRule` | Horizon tilt via `VNDetectHorizonRequest` | Skewed architectural shots |
 | `SCBlurRule` | Laplacian variance sharpness | Camera shake or missed focus |
 | `SCDistanceRule` | Subject bounding box area | Subject too far or too close |
-| `SCReflectionRule` | Specular highlight ratio | Glare on surfaces or glass |
+| `SCReflectionRule` | Face and upper-body detection (`VNDetectFaceRectanglesRequest` + `VNDetectHumanRectanglesRequest`) | Photographer reflected in mirrors, windows, or glossy product surfaces |
 | `SCInstagrammabilityRule` | Focal clarity, compositional balance, visual variety, lighting | Overall composition quality |
 | `SCShotClassifierRule` | Scene type via hint-based Vision scoring | Wrong room detection |
 
@@ -144,14 +144,20 @@ All rules conform to `SCFrameRule` and must complete in under 80ms. They run con
 
 ```
 CVPixelBuffer
-    ├── mobileclip_s0_image  (CLIP encoder → 512-D embedding)  ─┐
-    │                                                             ├── raw score (70%)
-    ├── home_head_s0         (embedding → sigmoid [0, 1])       ─┘
-    │
-    └── SCInstagrammabilityRule  (Vision heuristic)               ── heuristic score (30%)
+    ├── mobileclip_s0_image   (CLIP encoder → 512-D embedding)
+    │                                    │
+    │                          aesthetic_head_v2
+    │                  (normalize → MLP → clamp → score [0, 100])   ── model score
+    │                                                                    × modelWeight
+    └── SCInstagrammabilityRule  (Vision heuristic)                  ── heuristic score
+                                                                        × (1 − modelWeight)
                 │
                 ▼
         blended score 0–100
+
+        modelWeight per category:
+          homeListing / carListing  →  0.7  (30% heuristic blend)
+          foodPhoto / productPhoto  →  1.0  (heuristic bypassed — calibrated for interiors)
                 │
                 ▼
         EMA  (α = 0.3)    ← suppresses per-frame jitter without external state
@@ -160,12 +166,14 @@ CVPixelBuffer
         SCRuleResult { passed, numericScore, message }
 ```
 
-The model is injected via `SCAestheticModelProvider` — a `Sendable` protocol the app target implements. The SDK ships no model weights. `DemoApp/MLModels/` contains the reference `.mlpackage` files and `DemoApp/HomeListingAestheticModel.swift` is the full integration example.
+`aesthetic_head_v2` is a lightweight MLP head (~2 MB) trained on LAION aesthetic scores (val MAE 3.9/100). Normalization is baked into the CoreML export — no pre-processing required at inference time.
+
+The model is injected via `SCAestheticModelProvider` — a `Sendable` protocol the app target implements. The SDK ships no model weights. `DemoApp/MLModels/` contains the reference `.mlpackage` files and `DemoApp/GenericAestheticModel.swift` is the full integration example.
 
 ```swift
 ShotCoach(
-    category: SCBuiltInCategory.homeListing.extending {
-        $0.addRule(SCAestheticRule(model: try HomeListingAestheticModel()))
+    category: SCBuiltInCategory.productPhoto.extending {
+        $0.addRule(SCAestheticRule(model: try GenericAestheticModel(), modelWeight: 1.0))
     },
     apiKey: key
 )

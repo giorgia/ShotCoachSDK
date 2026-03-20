@@ -1,0 +1,5 @@
+open-clip-torch==2.26.1
+scikit-learn==1.4.2
+tqdm==4.66.2
+datasets==2.19.0
+requests==2.31.0

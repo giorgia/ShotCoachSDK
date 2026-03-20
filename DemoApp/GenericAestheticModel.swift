@@ -4,17 +4,18 @@ import CoreVideo
 import UIKit
 @_spi(ShotCoachInternal) import ShotCoachCore
 
-/// Concrete `SCAestheticModelProvider` for the Home Listing vertical.
+/// Generic `SCAestheticModelProvider` backed by `aesthetic_head_v2`.
 ///
 /// Two CoreML models are chained at inference time:
 ///   1. **MobileClip S0** (`mobileclip_s0_image`) — encodes a 256×256 pixel buffer
-///      into a 512-D CLIP embedding (output feature: `var_5`).
-///   2. **HomeHead S0** (`home_head_s0`) — maps the embedding to a sigmoid
-///      probability in [0, 1] (output feature: `var_5`), scaled to [0, 10].
+///      into a 512-D CLIP embedding.
+///   2. **Aesthetic Head V2** (`aesthetic_head_v2`) — maps the embedding to a score
+///      in [0, 100]. Normalization is baked into the CoreML model; no calibration
+///      is applied here.
 ///
 /// Both `.mlpackage` files live in `DemoApp/MLModels/` and must be added to the app
 /// target's bundle (drag into Xcode → target membership = ShotCoachDemo).
-final class HomeListingAestheticModel: SCAestheticModelProvider {
+final class GenericAestheticModel: SCAestheticModelProvider {
 
     // MARK: - Stored
 
@@ -39,22 +40,17 @@ final class HomeListingAestheticModel: SCAestheticModelProvider {
         guard
             let clipURL = Bundle.main.url(forResource: "mobileclip_s0_image", withExtension: "mlmodelc")
                        ?? Bundle.main.url(forResource: "mobileclip_s0_image", withExtension: "mlmodelc", subdirectory: "MLModels"),
-            let headURL = Bundle.main.url(forResource: "home_head_s0", withExtension: "mlmodelc")
-                       ?? Bundle.main.url(forResource: "home_head_s0", withExtension: "mlmodelc", subdirectory: "MLModels")
+            let headURL = Bundle.main.url(forResource: "aesthetic_head_v2", withExtension: "mlmodelc")
+                       ?? Bundle.main.url(forResource: "aesthetic_head_v2", withExtension: "mlmodelc", subdirectory: "MLModels")
         else { throw LoadError.bundleResourceNotFound }
 
         clipModel = try MLModel(contentsOf: clipURL, configuration: config)
         headModel = try MLModel(contentsOf: headURL, configuration: config)
 
-        // Read feature names from the compiled models at init time.
-        // Both MobileClip S0 and HomeHead S0 are single-input/single-output models,
-        // so `.keys.first` is deterministic. The fallback literals match the known
-        // feature names and guard against an unexpected empty description dictionary.
         clipInputName  = clipModel.modelDescription.inputDescriptionsByName.keys.first  ?? "image"
-        clipOutputName = clipModel.modelDescription.outputDescriptionsByName.keys.first ?? "embedding"
+        clipOutputName = clipModel.modelDescription.outputDescriptionsByName.keys.first ?? "final_emb_1"
         headInputName  = headModel.modelDescription.inputDescriptionsByName.keys.first  ?? "embedding"
-        headOutputName = headModel.modelDescription.outputDescriptionsByName.keys.first ?? "var_5"
-
+        headOutputName = headModel.modelDescription.outputDescriptionsByName.keys.first ?? "score"
     }
 
     // MARK: - SCAestheticModelProvider
@@ -73,13 +69,10 @@ final class HomeListingAestheticModel: SCAestheticModelProvider {
     // MARK: - Private
 
     /// Scales any CIImage to 256×256 into an IOSurface-backed BGRA buffer.
-    /// IOSurface backing is required for GPU-accelerated CIContext rendering
-    /// and for CoreML Neural Engine inference.
     private func resizeCIImage(_ ciImage: CIImage) throws -> CVPixelBuffer {
         let src = ciImage.extent
         let scaled = ciImage.transformed(by: CGAffineTransform(scaleX: 256 / src.width,
                                                                y:     256 / src.height))
-        // Translate so the image origin sits at (0, 0) in the buffer.
         let atOrigin = scaled.transformed(by: CGAffineTransform(
             translationX: -scaled.extent.origin.x,
             y:            -scaled.extent.origin.y
@@ -112,15 +105,9 @@ final class HomeListingAestheticModel: SCAestheticModelProvider {
             throw LoadError.unexpectedModelOutput
         }
 
-        let raw = fv.multiArrayValue.map { $0[0].doubleValue } ?? fv.doubleValue
-        // Gamma calibration (γ < 1) lifts lower model outputs toward a more intuitive
-        // 0–10 scale. HomeHead S0 probabilities cluster in [0.2, 0.6] for typical
-        // home listing photos, so without calibration scores feel "too low".
-        // γ = 0.6: raw=0.3→49, raw=0.5→66, raw=0.7→81
-        let calibrated = pow(max(0.0, min(1.0, raw)), 0.6)
-        return calibrated * 100.0
+        // aesthetic_head_v2 outputs a score already in [0, 100] — no calibration needed.
+        return fv.multiArrayValue.map { $0[0].doubleValue } ?? fv.doubleValue
     }
-
 
     // MARK: - Errors
 
@@ -131,8 +118,7 @@ final class HomeListingAestheticModel: SCAestheticModelProvider {
     }
 }
 
-// `MLModel` is not formally `Sendable`, but `HomeListingAestheticModel` is
+// `MLModel` is not formally `Sendable`, but `GenericAestheticModel` is
 // immutable after `init` — all properties are `let` and `CIContext` is
-// thread-safe per Apple documentation. Safe to cross actor boundaries.
-extension HomeListingAestheticModel: @unchecked Sendable {}
-
+// thread-safe per Apple documentation.
+extension GenericAestheticModel: @unchecked Sendable {}
