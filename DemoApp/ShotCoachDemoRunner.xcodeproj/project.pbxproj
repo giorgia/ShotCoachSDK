@@ -12,9 +12,6 @@
 		1100000000000000000000A4 /* CategoryPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2100000000000000000000A4 /* CategoryPickerView.swift */; };
 		1100000000000000000000B1 /* ShotCoachCore in Frameworks */ = {isa = PBXBuildFile; productRef = 4100000000000000000000B1 /* ShotCoachCore */; };
 		1100000000000000000000B2 /* ShotCoachUI in Frameworks */ = {isa = PBXBuildFile; productRef = 4100000000000000000000B2 /* ShotCoachUI */; };
-		230799A72F64B44900A5529C /* mobileclip_s0_image.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 230799A52F64B44900A5529C /* mobileclip_s0_image.mlpackage */; };
-		230799A82F64B44900A5529C /* home_head_s0.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 230799A42F64B44900A5529C /* home_head_s0.mlpackage */; };
-		23079BA62F6D9E8A00A5529C /* aesthetic_head_v2.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 23079BA52F6D9E8A00A5529C /* aesthetic_head_v2.mlpackage */; };
 		23079BA82F6DA23300A5529C /* GenericAestheticModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23079BA72F6DA23300A5529C /* GenericAestheticModel.swift */; };
 		233D0B2B2F55EE18004E8FCC /* ShotCameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 233D0B292F55EE18004E8FCC /* ShotCameraView.swift */; };
 		233D0B2C2F55EE18004E8FCC /* ShotListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 233D0B2A2F55EE18004E8FCC /* ShotListView.swift */; };
@@ -26,9 +23,6 @@
 		2100000000000000000000A3 /* APIKeySetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIKeySetupView.swift; sourceTree = "<group>"; };
 		2100000000000000000000A4 /* CategoryPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryPickerView.swift; sourceTree = "<group>"; };
 		2100000000000000000000C1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		230799A42F64B44900A5529C /* home_head_s0.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = home_head_s0.mlpackage; sourceTree = "<group>"; };
-		230799A52F64B44900A5529C /* mobileclip_s0_image.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = mobileclip_s0_image.mlpackage; sourceTree = "<group>"; };
-		23079BA52F6D9E8A00A5529C /* aesthetic_head_v2.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = aesthetic_head_v2.mlpackage; sourceTree = "<group>"; };
 		23079BA72F6DA23300A5529C /* GenericAestheticModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenericAestheticModel.swift; sourceTree = "<group>"; };
 		233D0B282F55EE18004E8FCC /* SessionResultsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionResultsView.swift; sourceTree = "<group>"; };
 		233D0B292F55EE18004E8FCC /* ShotCameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShotCameraView.swift; sourceTree = "<group>"; };
@@ -57,16 +51,6 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		230799A62F64B44900A5529C /* MLModels */ = {
-			isa = PBXGroup;
-			children = (
-				230799A42F64B44900A5529C /* home_head_s0.mlpackage */,
-				230799A52F64B44900A5529C /* mobileclip_s0_image.mlpackage */,
-				23079BA52F6D9E8A00A5529C /* aesthetic_head_v2.mlpackage */,
-			);
-			path = MLModels;
-			sourceTree = "<group>";
-		};
 		8100000000000000000000A0 = {
 			isa = PBXGroup;
 			children = (
@@ -80,7 +64,6 @@
 			isa = PBXGroup;
 			children = (
 				233D0B282F55EE18004E8FCC /* SessionResultsView.swift */,
-				230799A62F64B44900A5529C /* MLModels */,
 				233D0B292F55EE18004E8FCC /* ShotCameraView.swift */,
 				233D0B2A2F55EE18004E8FCC /* ShotListView.swift */,
 				23079BA72F6DA23300A5529C /* GenericAestheticModel.swift */,
@@ -167,10 +150,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1100000000000000000000A2 /* ShotCoachDemoApp.swift in Sources */,
-				230799A72F64B44900A5529C /* mobileclip_s0_image.mlpackage in Sources */,
-				230799A82F64B44900A5529C /* home_head_s0.mlpackage in Sources */,
 				1100000000000000000000A3 /* APIKeySetupView.swift in Sources */,
-				23079BA62F6D9E8A00A5529C /* aesthetic_head_v2.mlpackage in Sources */,
 				23079BA82F6DA23300A5529C /* GenericAestheticModel.swift in Sources */,
 				1100000000000000000000A4 /* CategoryPickerView.swift in Sources */,
 				233D0B2B2F55EE18004E8FCC /* ShotCameraView.swift in Sources */,
