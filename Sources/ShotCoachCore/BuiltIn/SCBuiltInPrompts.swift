@@ -84,7 +84,7 @@ internal enum SCBuiltInPrompts {
             Analyze this e-commerce product photo showing \(context). Evaluate:
             • Exposure accuracy and white balance — colours should be true-to-life
             • Sharpness and fine-detail rendering across the product surface
-            • Reflections or unwanted glare on product materials
+            • Reflections on product surfaces — specifically check for the photographer or their phone/camera visible as a reflection in glossy or shiny materials
             • Background consistency — pure white, seamless, or intentional lifestyle scene
             • Framing — subject centred with adequate safe-zone margins
             • Overall marketplace quality — would this drive buyer confidence?

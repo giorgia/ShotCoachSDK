@@ -19,18 +19,23 @@ public struct SCReflectionRule: SCFrameRule {
     public var feedbackMessage: String { "Check for reflections in mirrors or windows" }
 
     public func evaluate(_ frame: SCFrame) async -> SCRuleResult {
-        let request = VNDetectFaceRectanglesRequest()
+        let faceRequest  = VNDetectFaceRectanglesRequest()
+        // upperBodyOnly = true detects torso-up silhouettes, catching photographer
+        // reflections in curved/glossy product surfaces where the face may be distorted.
+        let humanRequest = VNDetectHumanRectanglesRequest()
+        humanRequest.upperBodyOnly = true
         let handler = VNImageRequestHandler(cvPixelBuffer: frame.pixelBuffer,
                                             orientation: .up,
                                             options: [:])
         do {
-            try handler.perform([request])
+            try handler.perform([faceRequest, humanRequest])
         } catch {
             return SCRuleResult(passed: true, message: "Reflection analysis unavailable", severity: severity)
         }
 
-        let faceCount = request.results?.count ?? 0
-        if faceCount > allowedFaceCount {
+        let faceCount  = faceRequest.results?.count  ?? 0
+        let humanCount = humanRequest.results?.count ?? 0
+        if faceCount > allowedFaceCount || humanCount > allowedFaceCount {
             return SCRuleResult(passed: false,
                                 message: "Reflection detected — check mirrors and windows",
                                 severity: severity)

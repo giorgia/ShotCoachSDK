@@ -5,11 +5,7 @@ import ShotCoachUI
 // MARK: - Helpers
 
 private func scoreColor(_ score: Int) -> Color {
-    switch score {
-    case 80...: return .green
-    case 60..<80: return .orange
-    default: return .red
-    }
+    score >= 80 ? .green : .yellow
 }
 
 // MARK: - SessionResultsView

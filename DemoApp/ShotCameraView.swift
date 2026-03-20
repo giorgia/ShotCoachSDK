@@ -34,7 +34,7 @@ struct ShotCameraView: View {
         info: CategoryInfo,
         shot: SCShotType,
         heroNamespace: Namespace.ID,
-        aestheticModel: HomeListingAestheticModel?,
+        aestheticModel: GenericAestheticModel?,
         onCapture: @escaping (SCPhoto) -> Void,
         onDismiss: @escaping () -> Void
     ) {
@@ -44,9 +44,12 @@ struct ShotCameraView: View {
         self.onCapture    = onCapture
         self.onDismiss    = onDismiss
         let aestheticRules: [any SCFrameRule] = {
-            guard info.category == .homeListing,
-                  let model = aestheticModel else { return [] }
-            return [SCAestheticRule(model: model, passingThreshold: 70.0)]
+            guard let model = aestheticModel else { return [] }
+            // The instagrammability heuristic is calibrated for real-estate interiors
+            // and inflates scores for food (vivid produce) and product (dark high-contrast
+            // subjects). For these categories, rely on the LAION model alone.
+            let modelWeight: Double = (info.category == .foodPhoto || info.category == .productPhoto) ? 1.0 : 0.7
+            return [SCAestheticRule(model: model, passingThreshold: 70.0, modelWeight: modelWeight)]
         }()
         _sdk = StateObject(wrappedValue: ShotCoach(
             category: SingleShotCategory(base: info.category, targetShot: shot,
