@@ -21,8 +21,8 @@ let package = Package(
             dependencies: ["ShotCoachCore"],
             path: "Sources/ShotCoachUI",
             resources: [
-                .copy("Resources/mobileclip_s0_image.mlpackage"),
-                .copy("Resources/aesthetic_head_v2.mlpackage"),
+                .copy("Resources/mobileclip_s0_image.mlmodelc"),
+                .copy("Resources/aesthetic_head_v2.mlmodelc"),
             ]
         ),
         // ShotCoachDemo is an iOS app — it lives in DemoApp/ (source files + Xcode project).
