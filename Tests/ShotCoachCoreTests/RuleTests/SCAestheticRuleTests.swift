@@ -123,6 +123,46 @@ final class SCAestheticRuleTests: XCTestCase {
     }
 
 
+    // MARK: - modelWeight
+
+    func test_modelWeight_default_isPointSeven() {
+        let rule = SCAestheticRule(model: MockAestheticModel(fixedScore: 50.0))
+        XCTAssertEqual(rule.modelWeight, 0.7)
+    }
+
+    func test_modelWeight_1_0_ignoresHeuristic() async {
+        // With modelWeight=1.0 the heuristic contributes 0%.
+        // A model fixed at 100 should drive EMA well above 80 after 10 frames.
+        let rule = SCAestheticRule(model: MockAestheticModel(fixedScore: 100.0),
+                                   modelWeight: 1.0)
+        let frame = makeFrame()
+        var result = await rule.evaluate(frame)
+        for _ in 0..<10 { result = await rule.evaluate(frame) }
+        XCTAssertGreaterThan(result.numericScore ?? 0, 80.0,
+            "modelWeight=1.0 with fixedScore=100 should converge above 80 after 10 frames")
+    }
+
+    func test_modelWeight_0_0_ignoresModel() async {
+        // With modelWeight=0.0 the model contributes 0%.
+        // A model returning 100 and one returning 0 must produce the same blended score
+        // because both are ignored — only the heuristic drives the result.
+        let highRule = SCAestheticRule(model: MockAestheticModel(fixedScore: 100.0),
+                                       modelWeight: 0.0)
+        let lowRule  = SCAestheticRule(model: MockAestheticModel(fixedScore: 0.0),
+                                       modelWeight: 0.0)
+        let frame = makeFrame()
+        var highResult = await highRule.evaluate(frame)
+        var lowResult  = await lowRule.evaluate(frame)
+        for _ in 0..<5 {
+            highResult = await highRule.evaluate(frame)
+            lowResult  = await lowRule.evaluate(frame)
+        }
+        XCTAssertEqual(highResult.numericScore ?? -1,
+                       lowResult.numericScore  ?? -2,
+                       accuracy: 1.0,
+                       "modelWeight=0.0: model score should not influence blended result")
+    }
+
     // MARK: - numericScore presence
 
     func test_numericScore_isPresent() async {
