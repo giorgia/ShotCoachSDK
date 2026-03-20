@@ -19,7 +19,11 @@ let package = Package(
         .target(
             name: "ShotCoachUI",
             dependencies: ["ShotCoachCore"],
-            path: "Sources/ShotCoachUI"
+            path: "Sources/ShotCoachUI",
+            resources: [
+                .copy("Resources/mobileclip_s0_image.mlpackage"),
+                .copy("Resources/aesthetic_head_v2.mlpackage"),
+            ]
         ),
         // ShotCoachDemo is an iOS app — it lives in DemoApp/ (source files + Xcode project).
         // It is NOT an SPM target. Build it via DemoApp/ShotCoachDemoRunner.xcodeproj.
